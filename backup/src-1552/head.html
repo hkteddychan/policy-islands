@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>政策島 Policy Islands</title>
+<style>
+:root{--coral:#db6a41;--ink:#211d1d;--cream:#fff8f4;--yellow:#fcea8b;--stone:#c5b5a7;--green:#71806a;--sh:0 2px 8px #4a2a1414,0 10px 30px #4a2a141f}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink);background:#aee0ee}
+#app{position:fixed;inset:0}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#css2d{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.panel{background:rgba(255,248,244,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:22px;box-shadow:var(--sh);border:1px solid #ffffff99}
+.pill{background:rgba(255,248,244,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:999px;box-shadow:var(--sh);border:1px solid #ffffff99;display:flex;align-items:center;gap:6px;padding:6px 10px}
+.eyebrow{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:10px;letter-spacing:2px;color:var(--coral);text-transform:uppercase}
+.btn{min-height:44px;min-width:44px;border:none;border-radius:9px;background:transparent;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;font-family:inherit}
+.btn:hover{background:var(--yellow)}
+.btn:active{background:var(--ink);color:var(--cream)}
+.btn:focus-visible{outline:3px solid var(--coral);outline-offset:1px}
+.btn.on{background:var(--ink);color:var(--cream)}
+.chip{border-radius:999px;background:var(--cream);box-shadow:0 2px 8px #4a2a1414;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #e8d9c8;display:inline-block}
+.chip:hover{background:var(--yellow)}
+.bignum{font-family:Georgia,serif;font-style:italic;font-size:34px;font-weight:700;color:var(--coral);line-height:1}
+#brand{position:absolute;top:14px;left:14px;padding:12px 18px;border-radius:18px;z-index:20;max-width:230px}
+#brand h1{font-size:26px;letter-spacing:2px;line-height:1.15}
+#brand .sub{font-size:11px;color:#6b5c50;margin-top:3px}
+#tbtop{position:absolute;top:14px;right:14px;z-index:20}
+#tbtop .btn{font-size:12px}
+#side{position:absolute;top:74px;right:14px;width:318px;max-height:calc(100% - 200px);z-index:19;display:flex;flex-direction:column;padding:14px;gap:8px}
+#side.hidden{display:none}
+#q{min-height:44px;border-radius:9px;border:1px solid #d8c8b4;background:#fffdf9;padding:0 12px;font-size:13px;font-family:inherit}
+#q:focus{outline:3px solid var(--coral)}
+.tabs{display:flex;gap:6px}
+.tab{flex:1;min-height:38px;border:none;border-radius:9px;background:#f1e4d4;font:700 12px/1 inherit;font-family:inherit;cursor:pointer;color:#6b5c50}
+.tab.on{background:var(--ink);color:var(--cream)}
+.tab:focus-visible{outline:3px solid var(--coral)}
+#sideScroll{overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}
+details.isl{background:#fffdf9;border-radius:12px;border:1px solid #eee0cf;padding:0}
+details.isl summary{list-style:none;cursor:pointer;padding:10px 12px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px}
+details.isl summary::-webkit-details-marker{display:none}
+details.isl .no{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;background:var(--coral);color:#fff;border-radius:6px;padding:2px 6px}
+.itrow{padding:8px 12px 8px 34px;font-size:12.5px;cursor:pointer;border-top:1px dashed #eee0cf}
+.itrow:hover{background:var(--yellow)}
+.flrow{display:flex;align-items:center;gap:8px;background:#fffdf9;border:1px solid #eee0cf;border-radius:12px;padding:10px 12px;font-size:12.5px;cursor:pointer}
+.flrow:hover{background:var(--yellow)}
+.kdot{width:10px;height:10px;border-radius:50%;background:var(--coral);flex:none}
+.kdot.thematic{background:repeating-linear-gradient(90deg,var(--coral) 0 4px,transparent 4px 7px)}
+.kdot.pending{background:repeating-linear-gradient(90deg,var(--coral) 0 2px,transparent 2px 5px)}
+#card{position:absolute;left:14px;top:74px;width:340px;max-height:calc(100% - 200px);z-index:21;padding:16px;overflow-y:auto}
+#card[hidden]{display:none}
+#cardClose{position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:9px;background:#f1e4d4;cursor:pointer;font-size:14px}
+#cardClose:hover{background:var(--yellow)}
+.cardicon{font-size:30px}
+.cardtitle{font-size:20px;font-weight:800;margin:2px 0 4px}
+.cardsum{font-size:12.5px;color:#5d5045;line-height:1.55;margin-bottom:10px}
+.facts{display:flex;gap:8px;margin:10px 0}
+.fact{flex:1;background:#fffdf9;border:1px solid #eee0cf;border-radius:12px;padding:8px 6px;text-align:center}
+.fact .k{font-size:10px;color:#6b5c50;margin-top:3px;line-height:1.3}
+.tl{border-left:2px solid var(--coral);margin:8px 0 4px 4px;padding-left:12px;display:flex;flex-direction:column;gap:8px}
+.tl .d{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;color:var(--coral)}
+.tl .t{font-size:12px;color:#4c4238}
+.itemli{display:flex;gap:8px;align-items:baseline;padding:7px 4px;border-bottom:1px dashed #eee0cf;cursor:pointer;font-size:13px}
+.itemli:hover{background:var(--yellow);border-radius:8px}
+.pin1{color:var(--coral);font-weight:800}
+#hud{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:22;flex-wrap:wrap;justify-content:center;max-width:96vw}
+#clockTxt{font-family:Georgia,serif;font-style:italic;font-size:19px;font-weight:700;padding:0 8px;min-width:64px;text-align:center}
+.hudsep{width:1px;height:30px;background:#d8c8b4;margin:0 4px}
+.tbtn{min-width:46px;min-height:44px;border:none;border-radius:9px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit}
+.tbtn .ic{font-size:15px;line-height:1}
+.tbtn .lb{font-size:9px;font-weight:700;color:#6b5c50}
+.tbtn:hover{background:var(--yellow)}
+.tbtn.on{background:var(--ink)}
+.tbtn.on .lb{color:var(--cream)}
+.tbtn:focus-visible{outline:3px solid var(--coral)}
+#logPanel{position:absolute;top:74px;right:346px;width:250px;max-height:300px;z-index:18;padding:12px;display:flex;flex-direction:column;gap:6px}
+#logPanel.hidden{display:none}
+.loghead{display:flex;align-items:center;gap:6px;font-weight:800;font-size:13px}
+.livedot{width:8px;height:8px;border-radius:50%;background:#2fae5f;animation:pul 1.2s infinite}
+@keyframes pul{50%{opacity:.3}}
+#logFilter{border:1px solid #d8c8b4;border-radius:6px;font-size:10px;background:#fffdf9;max-width:86px;font-family:inherit}
+#logList{overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.logev{font-size:11px;background:#fffdf9;border-radius:8px;padding:5px 8px;line-height:1.4}
+.logev .lt{font-family:ui-monospace,monospace;color:var(--coral);font-weight:700;font-size:9px;margin-right:4px}
+#legend{position:absolute;bottom:78px;left:14px;z-index:18;background:rgba(255,248,244,.9);border-radius:12px;box-shadow:var(--sh);padding:10px 14px;font-size:11px;display:flex;flex-direction:column;gap:5px}
+#legend[hidden]{display:none}
+.lgl{display:flex;align-items:center;gap:8px}
+.lgl .ln{width:34px;height:0;border-top:3px solid var(--coral)}
+.lgl .ln.thematic{border-top-style:dashed}
+.lgl .ln.pending{border-top-style:dotted}
+.ilabel{background:var(--cream);color:var(--ink);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;box-shadow:0 2px 8px #4a2a1444;white-space:nowrap;border:1px solid #ffffffcc;transition:opacity .2s}
+.ilabel.sel{background:var(--ink);color:var(--cream)}
+.ilabel.dim{opacity:.45}
+.ilabel.mini{font-size:10px;padding:3px 8px}
+.pinlab{background:var(--coral);color:#fff;border-radius:999px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;box-shadow:0 2px 6px #4a2a1466}
+.wname{background:var(--ink);color:var(--cream);border-radius:8px;padding:3px 8px;font-size:10px;white-space:nowrap;box-shadow:0 2px 6px #00000044}
+#load{position:fixed;inset:0;background:var(--cream);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#load .big{font-size:30px;font-weight:900;letter-spacing:3px}
+#intro{position:fixed;inset:0;background:#211d1dd9;z-index:99;display:flex;align-items:center;justify-content:center}
+#intro[hidden]{display:none}
+#introBox{background:var(--cream);border-radius:22px;padding:28px;max-width:400px;width:92vw;box-shadow:var(--sh)}
+#introBox .step{display:flex;gap:12px;margin:14px 0;align-items:flex-start}
+#introBox .sn{background:var(--coral);color:#fff;border-radius:50%;width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+#introBox .st{font-size:13.5px;line-height:1.5}
+#introGo{width:100%;min-height:48px;border:none;border-radius:9px;background:var(--coral);color:#fff;font-size:16px;font-weight:800;cursor:pointer;margin-top:10px;font-family:inherit}
+#introGo:hover{background:#c05a34}
+#hudTimeBtn{display:none}
+.sheet-handle{display:none}
+@media (max-width:800px){
+ #brand{max-width:170px;padding:8px 12px}#brand h1{font-size:18px}#brand .sub{display:none}
+ #tbtop{top:auto;bottom:76px;right:10px}
+ #tbtop .btn{min-height:38px;min-width:38px;font-size:11px}
+ #side,#card{left:0;right:0;top:auto;bottom:0;width:100%;max-height:52%;border-radius:22px 22px 0 0;z-index:30}
+ #card{max-height:34%}
+ .sheet-handle{display:block;width:44px;height:5px;border-radius:3px;background:#cbb9a5;margin:0 auto 8px}
+ #hud{bottom:10px;left:8px;right:8px;transform:none;max-width:none;justify-content:flex-start}
+ #hud .tbtn,#hud #clockTxt,#hud .hudsep{display:none}
+ #hudTimeBtn{display:flex}
+ #hud.open .tbtn,#hud.open #clockTxt,#hud.open .hudsep{display:flex}
+ #logPanel{display:none}
+ #legend{bottom:64px;left:8px}
+}
+</style>
+<script>
+window.__errs = window.__errs || [];
+window.addEventListener('error', function(e){ window.__errs.push('ERR: ' + (e.message||'') + ' @ ' + (e.filename||'') + ':' + (e.lineno||0) + ' STACK: ' + ((e.error && e.error.stack) ? e.error.stack : 'n/a')); });
+window.addEventListener('unhandledrejection', function(e){ window.__errs.push('REJ: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
+</script>
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="app">
+ <canvas id="c"></canvas>
+ <div id="css2d"></div>
+
+ <div id="brand" class="panel">
+  <div class="eyebrow" data-en="POLICY ISLANDS">POLICY ISLANDS</div>
+  <h1 data-en="Policy Islands">政策島</h1>
+  <div class="sub" data-en="6 islands + 1 city hall - see how policies work together">六座島 × 一個市政廳 · 看見政策點樣協作</div>
+ </div>
+
+ <div id="tbtop" class="pill">
+  <button class="btn" id="btnHome" data-en="⌂ Overview">⌂ 全景</button>
+  <button class="btn" id="btnList" data-en="☰ List">☰ 清單</button>
+  <button class="btn" id="btnHelp" data-en="? Help">? 說明</button>
+ </div>
+
+ <aside id="side" class="panel">
+  <div class="sheet-handle" id="sideHandle"></div>
+  <input id="q" data-en-ph="Search policies / items / flows..." placeholder="搜尋政策／細項／協作…">
+  <div class="tabs">
+   <button class="tab on" id="tabT" data-en="Themes">政策主題</button>
+   <button class="tab" id="tabF" data-en="Flows">協作關係</button>
+  </div>
+  <div id="sideScroll"><div id="tabThemes"></div><div id="tabFlows" hidden></div></div>
+ </aside>
+
+ <section id="card" class="panel" hidden>
+  <div class="sheet-handle" id="cardHandle"></div>
+  <button id="cardClose">✕</button>
+  <div id="cardBody"></div>
+ </section>
+
+ <div id="logPanel" class="panel">
+  <div class="loghead"><span class="livedot"></span><span data-en="City Log">城市日誌</span><select id="logFilter"></select></div>
+  <div id="logList"></div>
+ </div>
+
+ <div id="legend" hidden>
+  <div class="lgl"><div class="ln"></div><span data-en="Official">官方正式</span></div>
+  <div class="lgl"><div class="ln thematic"></div><span data-en="Thematic">主題協作</span></div>
+  <div class="lgl"><div class="ln pending"></div><span data-en="Pending">規劃中</span></div>
+ </div>
+
+ <div id="hud" class="pill">
+  <span id="clockTxt">10:00</span>
+  <button class="tbtn" id="hudTimeBtn"><span class="ic">◷</span><span class="lb" data-en="Time">時間</span></button>
+  <span class="hudsep"></span>
+  <button class="tbtn" data-min="360"><span class="ic">🌄</span><span class="lb">06</span></button>
+  <button class="tbtn" data-min="720"><span class="ic">☀️</span><span class="lb">12</span></button>
+  <button class="tbtn" data-min="1080"><span class="ic">🌇</span><span class="lb">18</span></button>
+  <button class="tbtn" data-min="1260"><span class="ic">🌙</span><span class="lb">21</span></button>
+  <span class="hudsep"></span>
+  <button class="tbtn" id="tglName"><span class="ic">🏷️</span><span class="lb" data-en="Names">名牌</span></button>
+  <button class="tbtn on" id="tglCarry"><span class="ic">🎒</span><span class="lb" data-en="Carry">搬運</span></button>
+  <button class="tbtn" id="tglFlow"><span class="ic">🧵</span><span class="lb" data-en="Flows">協作線</span></button>
+  <button class="tbtn" id="tglPause"><span class="ic">⏸</span><span class="lb" data-en="Pause">暫停</span></button>
+  <button class="tbtn" id="tglTop"><span class="ic">🦅</span><span class="lb" data-en="Bird">鳥瞰</span></button>
+  <button class="tbtn on" id="tglLog"><span class="ic">📜</span><span class="lb" data-en="Log">日誌</span></button>
+ </div>
+
+ <div id="load"><div class="big" data-en="Assembling the policy city...">正在組合政策城市…</div><div class="eyebrow">POLICY ISLANDS · LOADING</div></div>
+
+ <div id="intro" hidden>
+  <div id="introBox">
+   <div class="eyebrow">HOW TO EXPLORE</div>
+   <h2 data-en="Welcome to Policy Islands" style="margin-top:6px">歡迎嚟到政策島</h2>
+   <div class="step"><div class="sn">1</div><div class="st" data-en="Drag to rotate, scroll to zoom. Click any island or building.">拖曳旋轉、滾輪縮放；點擊任何島或建築。</div></div>
+   <div class="step"><div class="sn">2</div><div class="st" data-en="Open the flow toggle to see little people carrying policies between islands.">打開「協作線」開關，睇小人點樣喺島之間搬運政策。</div></div>
+   <div class="step"><div class="sn">3</div><div class="st" data-en="Use the clock buttons to jump: dawn 06, noon 12, dusk 18, night 21.">用時鐘按鈕跳時間：清晨 06、白天 12、黃昏 18、夜晚 21。</div></div>
+   <button id="introGo" data-en="Start exploring">開始探索</button>
+  </div>
+ </div>
+</div>

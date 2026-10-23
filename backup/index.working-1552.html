@@ -1,0 +1,2511 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>政策島 Policy Islands</title>
+<style>
+:root{--coral:#db6a41;--ink:#211d1d;--cream:#fff8f4;--yellow:#fcea8b;--stone:#c5b5a7;--green:#71806a;--sh:0 2px 8px #4a2a1414,0 10px 30px #4a2a141f}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink);background:#aee0ee}
+#app{position:fixed;inset:0}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#css2d{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.panel{background:rgba(255,248,244,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:22px;box-shadow:var(--sh);border:1px solid #ffffff99}
+.pill{background:rgba(255,248,244,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:999px;box-shadow:var(--sh);border:1px solid #ffffff99;display:flex;align-items:center;gap:6px;padding:6px 10px}
+.eyebrow{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:10px;letter-spacing:2px;color:var(--coral);text-transform:uppercase}
+.btn{min-height:44px;min-width:44px;border:none;border-radius:9px;background:transparent;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;font-family:inherit}
+.btn:hover{background:var(--yellow)}
+.btn:active{background:var(--ink);color:var(--cream)}
+.btn:focus-visible{outline:3px solid var(--coral);outline-offset:1px}
+.btn.on{background:var(--ink);color:var(--cream)}
+.chip{border-radius:999px;background:var(--cream);box-shadow:0 2px 8px #4a2a1414;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #e8d9c8;display:inline-block}
+.chip:hover{background:var(--yellow)}
+.bignum{font-family:Georgia,serif;font-style:italic;font-size:34px;font-weight:700;color:var(--coral);line-height:1}
+#brand{position:absolute;top:14px;left:14px;padding:12px 18px;border-radius:18px;z-index:20;max-width:230px}
+#brand h1{font-size:26px;letter-spacing:2px;line-height:1.15}
+#brand .sub{font-size:11px;color:#6b5c50;margin-top:3px}
+#tbtop{position:absolute;top:14px;right:14px;z-index:20}
+#tbtop .btn{font-size:12px}
+#side{position:absolute;top:74px;right:14px;width:318px;max-height:calc(100% - 200px);z-index:19;display:flex;flex-direction:column;padding:14px;gap:8px}
+#side.hidden{display:none}
+#q{min-height:44px;border-radius:9px;border:1px solid #d8c8b4;background:#fffdf9;padding:0 12px;font-size:13px;font-family:inherit}
+#q:focus{outline:3px solid var(--coral)}
+.tabs{display:flex;gap:6px}
+.tab{flex:1;min-height:38px;border:none;border-radius:9px;background:#f1e4d4;font:700 12px/1 inherit;font-family:inherit;cursor:pointer;color:#6b5c50}
+.tab.on{background:var(--ink);color:var(--cream)}
+.tab:focus-visible{outline:3px solid var(--coral)}
+#sideScroll{overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px}
+details.isl{background:#fffdf9;border-radius:12px;border:1px solid #eee0cf;padding:0}
+details.isl summary{list-style:none;cursor:pointer;padding:10px 12px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px}
+details.isl summary::-webkit-details-marker{display:none}
+details.isl .no{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;background:var(--coral);color:#fff;border-radius:6px;padding:2px 6px}
+.itrow{padding:8px 12px 8px 34px;font-size:12.5px;cursor:pointer;border-top:1px dashed #eee0cf}
+.itrow:hover{background:var(--yellow)}
+.flrow{display:flex;align-items:center;gap:8px;background:#fffdf9;border:1px solid #eee0cf;border-radius:12px;padding:10px 12px;font-size:12.5px;cursor:pointer}
+.flrow:hover{background:var(--yellow)}
+.kdot{width:10px;height:10px;border-radius:50%;background:var(--coral);flex:none}
+.kdot.thematic{background:repeating-linear-gradient(90deg,var(--coral) 0 4px,transparent 4px 7px)}
+.kdot.pending{background:repeating-linear-gradient(90deg,var(--coral) 0 2px,transparent 2px 5px)}
+#card{position:absolute;left:14px;top:74px;width:340px;max-height:calc(100% - 200px);z-index:21;padding:16px;overflow-y:auto}
+#card[hidden]{display:none}
+#cardClose{position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:9px;background:#f1e4d4;cursor:pointer;font-size:14px}
+#cardClose:hover{background:var(--yellow)}
+.cardicon{font-size:30px}
+.cardtitle{font-size:20px;font-weight:800;margin:2px 0 4px}
+.cardsum{font-size:12.5px;color:#5d5045;line-height:1.55;margin-bottom:10px}
+.facts{display:flex;gap:8px;margin:10px 0}
+.fact{flex:1;background:#fffdf9;border:1px solid #eee0cf;border-radius:12px;padding:8px 6px;text-align:center}
+.fact .k{font-size:10px;color:#6b5c50;margin-top:3px;line-height:1.3}
+.tl{border-left:2px solid var(--coral);margin:8px 0 4px 4px;padding-left:12px;display:flex;flex-direction:column;gap:8px}
+.tl .d{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;color:var(--coral)}
+.tl .t{font-size:12px;color:#4c4238}
+.itemli{display:flex;gap:8px;align-items:baseline;padding:7px 4px;border-bottom:1px dashed #eee0cf;cursor:pointer;font-size:13px}
+.itemli:hover{background:var(--yellow);border-radius:8px}
+.pin1{color:var(--coral);font-weight:800}
+#hud{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:22;flex-wrap:wrap;justify-content:center;max-width:96vw}
+#clockTxt{font-family:Georgia,serif;font-style:italic;font-size:19px;font-weight:700;padding:0 8px;min-width:64px;text-align:center}
+.hudsep{width:1px;height:30px;background:#d8c8b4;margin:0 4px}
+.tbtn{min-width:46px;min-height:44px;border:none;border-radius:9px;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit}
+.tbtn .ic{font-size:15px;line-height:1}
+.tbtn .lb{font-size:9px;font-weight:700;color:#6b5c50}
+.tbtn:hover{background:var(--yellow)}
+.tbtn.on{background:var(--ink)}
+.tbtn.on .lb{color:var(--cream)}
+.tbtn:focus-visible{outline:3px solid var(--coral)}
+#logPanel{position:absolute;top:74px;right:346px;width:250px;max-height:300px;z-index:18;padding:12px;display:flex;flex-direction:column;gap:6px}
+#logPanel.hidden{display:none}
+.loghead{display:flex;align-items:center;gap:6px;font-weight:800;font-size:13px}
+.livedot{width:8px;height:8px;border-radius:50%;background:#2fae5f;animation:pul 1.2s infinite}
+@keyframes pul{50%{opacity:.3}}
+#logFilter{border:1px solid #d8c8b4;border-radius:6px;font-size:10px;background:#fffdf9;max-width:86px;font-family:inherit}
+#logList{overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.logev{font-size:11px;background:#fffdf9;border-radius:8px;padding:5px 8px;line-height:1.4}
+.logev .lt{font-family:ui-monospace,monospace;color:var(--coral);font-weight:700;font-size:9px;margin-right:4px}
+#legend{position:absolute;bottom:78px;left:14px;z-index:18;background:rgba(255,248,244,.9);border-radius:12px;box-shadow:var(--sh);padding:10px 14px;font-size:11px;display:flex;flex-direction:column;gap:5px}
+#legend[hidden]{display:none}
+.lgl{display:flex;align-items:center;gap:8px}
+.lgl .ln{width:34px;height:0;border-top:3px solid var(--coral)}
+.lgl .ln.thematic{border-top-style:dashed}
+.lgl .ln.pending{border-top-style:dotted}
+.ilabel{background:var(--cream);color:var(--ink);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;box-shadow:0 2px 8px #4a2a1444;white-space:nowrap;border:1px solid #ffffffcc;transition:opacity .2s}
+.ilabel.sel{background:var(--ink);color:var(--cream)}
+.ilabel.dim{opacity:.45}
+.ilabel.mini{font-size:10px;padding:3px 8px}
+.pinlab{background:var(--coral);color:#fff;border-radius:999px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;box-shadow:0 2px 6px #4a2a1466}
+.wname{background:var(--ink);color:var(--cream);border-radius:8px;padding:3px 8px;font-size:10px;white-space:nowrap;box-shadow:0 2px 6px #00000044}
+#load{position:fixed;inset:0;background:var(--cream);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#load .big{font-size:30px;font-weight:900;letter-spacing:3px}
+#intro{position:fixed;inset:0;background:#211d1dd9;z-index:99;display:flex;align-items:center;justify-content:center}
+#intro[hidden]{display:none}
+#introBox{background:var(--cream);border-radius:22px;padding:28px;max-width:400px;width:92vw;box-shadow:var(--sh)}
+#introBox .step{display:flex;gap:12px;margin:14px 0;align-items:flex-start}
+#introBox .sn{background:var(--coral);color:#fff;border-radius:50%;width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+#introBox .st{font-size:13.5px;line-height:1.5}
+#introGo{width:100%;min-height:48px;border:none;border-radius:9px;background:var(--coral);color:#fff;font-size:16px;font-weight:800;cursor:pointer;margin-top:10px;font-family:inherit}
+#introGo:hover{background:#c05a34}
+#hudTimeBtn{display:none}
+.sheet-handle{display:none}
+@media (max-width:800px){
+ #brand{max-width:170px;padding:8px 12px}#brand h1{font-size:18px}#brand .sub{display:none}
+ #tbtop{top:auto;bottom:76px;right:10px}
+ #tbtop .btn{min-height:38px;min-width:38px;font-size:11px}
+ #side,#card{left:0;right:0;top:auto;bottom:0;width:100%;max-height:52%;border-radius:22px 22px 0 0;z-index:30}
+ #card{max-height:34%}
+ .sheet-handle{display:block;width:44px;height:5px;border-radius:3px;background:#cbb9a5;margin:0 auto 8px}
+ #hud{bottom:10px;left:8px;right:8px;transform:none;max-width:none;justify-content:flex-start}
+ #hud .tbtn,#hud #clockTxt,#hud .hudsep{display:none}
+ #hudTimeBtn{display:flex}
+ #hud.open .tbtn,#hud.open #clockTxt,#hud.open .hudsep{display:flex}
+ #logPanel{display:none}
+ #legend{bottom:64px;left:8px}
+}
+</style>
+<script>
+window.__errs = window.__errs || [];
+window.addEventListener('error', function(e){ window.__errs.push('ERR: ' + (e.message||'') + ' @ ' + (e.filename||'') + ':' + (e.lineno||0) + ' STACK: ' + ((e.error && e.error.stack) ? e.error.stack : 'n/a')); });
+window.addEventListener('unhandledrejection', function(e){ window.__errs.push('REJ: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); });
+</script>
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="app">
+ <canvas id="c"></canvas>
+ <div id="css2d"></div>
+
+ <div id="brand" class="panel">
+  <div class="eyebrow" data-en="POLICY ISLANDS">POLICY ISLANDS</div>
+  <h1 data-en="Policy Islands">政策島</h1>
+  <div class="sub" data-en="6 islands + 1 city hall - see how policies work together">六座島 × 一個市政廳 · 看見政策點樣協作</div>
+ </div>
+
+ <div id="tbtop" class="pill">
+  <button class="btn" id="btnHome" data-en="⌂ Overview">⌂ 全景</button>
+  <button class="btn" id="btnList" data-en="☰ List">☰ 清單</button>
+  <button class="btn" id="btnHelp" data-en="? Help">? 說明</button>
+ </div>
+
+ <aside id="side" class="panel">
+  <div class="sheet-handle" id="sideHandle"></div>
+  <input id="q" data-en-ph="Search policies / items / flows..." placeholder="搜尋政策／細項／協作…">
+  <div class="tabs">
+   <button class="tab on" id="tabT" data-en="Themes">政策主題</button>
+   <button class="tab" id="tabF" data-en="Flows">協作關係</button>
+  </div>
+  <div id="sideScroll"><div id="tabThemes"></div><div id="tabFlows" hidden></div></div>
+ </aside>
+
+ <section id="card" class="panel" hidden>
+  <div class="sheet-handle" id="cardHandle"></div>
+  <button id="cardClose">✕</button>
+  <div id="cardBody"></div>
+ </section>
+
+ <div id="logPanel" class="panel">
+  <div class="loghead"><span class="livedot"></span><span data-en="City Log">城市日誌</span><select id="logFilter"></select></div>
+  <div id="logList"></div>
+ </div>
+
+ <div id="legend" hidden>
+  <div class="lgl"><div class="ln"></div><span data-en="Official">官方正式</span></div>
+  <div class="lgl"><div class="ln thematic"></div><span data-en="Thematic">主題協作</span></div>
+  <div class="lgl"><div class="ln pending"></div><span data-en="Pending">規劃中</span></div>
+ </div>
+
+ <div id="hud" class="pill">
+  <span id="clockTxt">10:00</span>
+  <button class="tbtn" id="hudTimeBtn"><span class="ic">◷</span><span class="lb" data-en="Time">時間</span></button>
+  <span class="hudsep"></span>
+  <button class="tbtn" data-min="360"><span class="ic">🌄</span><span class="lb">06</span></button>
+  <button class="tbtn" data-min="720"><span class="ic">☀️</span><span class="lb">12</span></button>
+  <button class="tbtn" data-min="1080"><span class="ic">🌇</span><span class="lb">18</span></button>
+  <button class="tbtn" data-min="1260"><span class="ic">🌙</span><span class="lb">21</span></button>
+  <span class="hudsep"></span>
+  <button class="tbtn" id="tglName"><span class="ic">🏷️</span><span class="lb" data-en="Names">名牌</span></button>
+  <button class="tbtn on" id="tglCarry"><span class="ic">🎒</span><span class="lb" data-en="Carry">搬運</span></button>
+  <button class="tbtn" id="tglFlow"><span class="ic">🧵</span><span class="lb" data-en="Flows">協作線</span></button>
+  <button class="tbtn" id="tglPause"><span class="ic">⏸</span><span class="lb" data-en="Pause">暫停</span></button>
+  <button class="tbtn" id="tglTop"><span class="ic">🦅</span><span class="lb" data-en="Bird">鳥瞰</span></button>
+  <button class="tbtn on" id="tglLog"><span class="ic">📜</span><span class="lb" data-en="Log">日誌</span></button>
+ </div>
+
+ <div id="load"><div class="big" data-en="Assembling the policy city...">正在組合政策城市…</div><div class="eyebrow">POLICY ISLANDS · LOADING</div></div>
+
+ <div id="intro" hidden>
+  <div id="introBox">
+   <div class="eyebrow">HOW TO EXPLORE</div>
+   <h2 data-en="Welcome to Policy Islands" style="margin-top:6px">歡迎嚟到政策島</h2>
+   <div class="step"><div class="sn">1</div><div class="st" data-en="Drag to rotate, scroll to zoom. Click any island or building.">拖曳旋轉、滾輪縮放；點擊任何島或建築。</div></div>
+   <div class="step"><div class="sn">2</div><div class="st" data-en="Open the flow toggle to see little people carrying policies between islands.">打開「協作線」開關，睇小人點樣喺島之間搬運政策。</div></div>
+   <div class="step"><div class="sn">3</div><div class="st" data-en="Use the clock buttons to jump: dawn 06, noon 12, dusk 18, night 21.">用時鐘按鈕跳時間：清晨 06、白天 12、黃昏 18、夜晚 21。</div></div>
+   <button id="introGo" data-en="Start exploring">開始探索</button>
+  </div>
+ </div>
+</div>
+<script type="module">
+/* ============ 00 · imports ============ */
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* ============ 01 · DATA + helpers ============ */
+const LANG = (new URLSearchParams(location.search).get('lang') === 'en') ? 'en' : 'zh';
+const tr = (o) => (typeof o === 'string') ? o : (LANG === 'en' ? (o.en || o.zh) : o.zh);
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
+const TAU = Math.PI * 2;
+function mulberry(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const RNG = mulberry(20261023);
+const rnd = (a = 0, b = 1) => a + RNG() * (b - a);
+// value noise + fbm
+const PERM = new Uint8Array(512);
+(function () { const p = new Uint8Array(256); for (let i = 0; i < 256; i++) p[i] = i; for (let i = 255; i > 0; i--) { const j = (RNG() * (i + 1)) | 0; const t = p[i]; p[i] = p[j]; p[j] = t; } for (let i = 0; i < 512; i++) PERM[i] = p[i & 255]; })();
+function vnoise(x, y) {
+  const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255, xf = x - Math.floor(x), yf = y - Math.floor(y);
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const aa = PERM[PERM[xi] + yi] / 255, ba = PERM[PERM[xi + 1] + yi] / 255;
+  const ab = PERM[PERM[xi] + yi + 1] / 255, bb = PERM[PERM[xi + 1] + yi + 1] / 255;
+  return lerp(lerp(aa, ba, u), lerp(ab, bb, u), v);
+}
+function fbm(x, y) { let a = 0, amp = .5, f = 1; for (let i = 0; i < 4; i++) { a += amp * vnoise(x * f, y * f); f *= 2; amp *= .5; } return a; }
+
+/* ---------- palette ---------- */
+const PAL = {
+  coral: 0xdb6a41, ink: 0x211d1d, cream: 0xfff8f4, yellow: 0xfcea8b, stone: 0xc5b5a7, green: 0x71806a,
+  glass: 0x86a8a6, wood: 0xb48560, teal: 0x3e7c8c,
+  plant: [0x9cc27a, 0x8db86f, 0x728f5f], pastel: [0xf2b5c6, 0x58a6a6, 0x6f7fb5],
+  wall: 0xf4ebdd, eave: 0xa34e34, win: 0xa8c4c2, night: 0xffc777
+};
+
+/* ---------- islands ---------- */
+const ISLANDS = [
+  { id: 'hub', no: '00', icon: '🏛️', name: { zh: '市政', en: 'Civic' }, color: 0xc5b5a7, ang: null,
+    summary: { zh: '中央市政廳把六座政策島接在一起：所有跨部門文件、撥款同覆核都在這裡出發。', en: 'The central city hall links all six policy islands: cross-department paperwork, funding and sign-off all start here.' } },
+  { id: 'transport', no: '01', icon: '🚌', name: { zh: '交通', en: 'Transport' }, color: 0xdb6a41, ang: -90,
+    summary: { zh: '巴士、單車同步行網絡構成城市的血液。呢度決定幾多人 15 分鐘內到得到診所同學校。', en: 'Bus, cycling and walking networks are the city bloodstream — they decide how many people reach a clinic or school within 15 minutes.' } },
+  { id: 'education', no: '02', icon: '📚', name: { zh: '教育', en: 'Education' }, color: 0x6f7fb5, ang: -30,
+    summary: { zh: '學校、圖書館同技能證書島。每一張證書都會變成另一座島上面嘅工作機會。', en: 'Schools, libraries and skills certificates. Every certificate becomes a job opportunity on another island.' } },
+  { id: 'health', no: '03', icon: '🏥', name: { zh: '醫療', en: 'Health' }, color: 0x58a6a6, ang: 30,
+    summary: { zh: '社區診所、康復宿舍同長者照護預算。數據同物資每日都靠協作線送過嚟。', en: 'Community clinics, recovery housing and elder-care budgets — data and supplies arrive daily along the flows.' } },
+  { id: 'housing', no: '04', icon: '🏠', name: { zh: '房屋', en: 'Housing' }, color: 0xb48560, ang: 90,
+    summary: { zh: '屋邨、配額同社區農圃。住屋決定咩家庭幾多錢剩返俾交通同教育。', en: 'Estates, quotas and community gardens — housing decides how much of a family budget is left for transport and education.' } },
+  { id: 'environment', no: '05', icon: '🌳', name: { zh: '環境', en: 'Environment' }, color: 0x71806a, ang: 150,
+    summary: { zh: '河道、綠化同單車網絡。碳數據每日送入交通島，影響下一輪路線規劃。', en: 'Rivers, greening and the cycle network — carbon data lands on the transport island every day and shapes the next route plan.' } },
+  { id: 'economy', no: '06', icon: '💰', name: { zh: '經濟', en: 'Economy' }, color: 0xf2b5c6, ang: 210,
+    summary: { zh: '稅收、就業同市場攤位。經濟島的數字會變成其他五座島嘅撥款。', en: 'Tax, jobs and market stalls. Numbers here become budget lines on the other five islands.' } }
+];
+
+/* ---------- items (細項) ---------- */
+const ITEMS = {
+  'h1': { isl: 'hub', no: 1, name: { zh: '市政廳', en: 'City Hall' }, model: 'hall', active: [360, 1080],
+    facts: [
+      { v: '42', u: { zh: '項', en: '' }, k: { zh: '在跟政策', en: 'policies tracked' } },
+      { v: '128', u: { zh: '億', en: 'bn' }, k: { zh: '年度公共開支', en: 'annual spend' } },
+      { v: '6', u: { zh: '座', en: '' }, k: { zh: '對接政策島', en: 'islands linked' } }
+    ],
+    timeline: [
+      { d: '2024 Q4', t: { zh: '市政廳完成電子收件箱整合', en: 'Electronic intake fully integrated' } },
+      { d: '2025 Q3', t: { zh: '跨部門檔案交換平台啟用', en: 'Cross-department file exchange went live' } },
+      { d: '2026 Q2', t: { zh: '覆核時限由 45 日縮至 21 日', en: 'Sign-off window cut from 45 to 21 days' } }
+    ] },
+  'h2': { isl: 'hub', no: 2, name: { zh: '巨型時鐘', en: 'Clock Tower' }, model: 'clock', active: [0, 1440],
+    facts: [
+      { v: '24', u: { zh: '小時', en: 'h' }, k: { zh: '運作時段', en: 'hours running' } },
+      { v: '6', u: { zh: '次', en: '' }, k: { zh: '每日整點報時', en: 'chimes per day' } }
+    ],
+    timeline: [{ d: '2025 Q1', t: { zh: '時鐘塔修復完成，重設統一時制', en: 'Tower restored, single time standard adopted' } }] },
+  'h3': { isl: 'hub', no: 3, name: { zh: '市民舞台', en: 'Civic Stage' }, model: 'stage', active: [1080, 1320],
+    facts: [
+      { v: '1,200', u: { zh: '人', en: '' }, k: { zh: '最大容量', en: 'max capacity' } },
+      { v: '18', u: { zh: '場', en: '' }, k: { zh: '每月公眾諮詢會', en: 'public forums / month' } }
+    ],
+    timeline: [{ d: '2025 Q4', t: { zh: '舞台改為政策發布與公眾質詢用途', en: 'Stage repurposed for policy briefings and Q&A' } }] },
+
+  't1': { isl: 'transport', no: 1, name: { zh: '巴士總站', en: 'Bus Terminus' }, model: 'busstop', active: [300, 1320],
+    facts: [
+      { v: '23', u: { zh: '站', en: '' }, k: { zh: '覆蓋巴士站', en: 'bus stops covered' } },
+      { v: '8', u: { zh: '分鐘', en: 'min' }, k: { zh: '平均班距', en: 'average headway' } },
+      { v: '68', u: { zh: '%', en: '' }, k: { zh: '公共交通使用率', en: 'public transport share' } }
+    ],
+    timeline: [
+      { d: '2024 Q2', t: { zh: '首條跨境接駁線開通', en: 'First cross-boundary feeder route launched' } },
+      { d: '2025 Q3', t: { zh: '全站加裝實時到站牌', en: 'Live arrival boards at every stop' } },
+      { d: '2026 Q1', t: { zh: '高峰班次加密 15%', en: 'Peak frequency up 15%' } }
+    ] },
+  't2': { isl: 'transport', no: 2, name: { zh: '單車徑', en: 'Cycle Network' }, model: 'bike', active: [360, 1320],
+    facts: [
+      { v: '31', u: { zh: '公里', en: 'km' }, k: { zh: '鋪設單車徑', en: 'cycle track built' } },
+      { v: '4,200', u: { zh: '部', en: '' }, k: { zh: '每日單車流量', en: 'daily bike trips' } },
+      { v: '12', u: { zh: '分鐘', en: 'min' }, k: { zh: '平均接駁時間', en: 'average transfer time' } }
+    ],
+    timeline: [
+      { d: '2025 Q1', t: { zh: '單車徑與學校交通環接駁', en: 'Cycle track linked to school feeder loop' } },
+      { d: '2026 Q2', t: { zh: '增設 900 個單車泊位', en: '900 new bike parking bays added' } }
+    ] },
+  't3': { isl: 'transport', no: 3, name: { zh: '交通亭', en: 'Transit Kiosk' }, model: 'pavilion', active: [300, 1380],
+    facts: [
+      { v: '9', u: { zh: '座', en: '' }, k: { zh: '交滙亭', en: 'interchange kiosks' } },
+      { v: '11', u: { zh: '種', en: '' }, k: { zh: '語言提示', en: 'languages announced' } }
+    ],
+    timeline: [{ d: '2026 Q3', t: { zh: '亭內加入實時行程規劃機', en: 'Real-time journey planner installed in kiosks' } }] },
+
+  'e1': { isl: 'education', no: 1, name: { zh: '社區教室', en: 'Community Classroom' }, model: 'classroom', active: [480, 1080],
+    facts: [
+      { v: '1,860', u: { zh: '人', en: '' }, k: { zh: '在讀學生', en: 'students enrolled' } },
+      { v: '14', u: { zh: '間', en: '' }, k: { zh: '夜間自修室', en: 'evening study rooms' } },
+      { v: '92', u: { zh: '%', en: '' }, k: { zh: '升學率', en: 'further-study rate' } }
+    ],
+    timeline: [
+      { d: '2024 Q3', t: { zh: '夜校課程擴展至 14 間自修室', en: 'Evening classes expanded to 14 study rooms' } },
+      { d: '2025 Q4', t: { zh: '引入跨島實習配對計劃', en: 'Cross-island internship matching introduced' } }
+    ] },
+  'e2': { isl: 'education', no: 2, name: { zh: '巨型書庫', en: 'Great Library' }, model: 'book', active: [540, 1260],
+    facts: [
+      { v: '320', u: { zh: '萬冊', en: '' }, k: { zh: '館藏', en: 'volumes held' } },
+      { v: '54', u: { zh: '間', en: '' }, k: { zh: '社區借閱點', en: 'community lending points' } }
+    ],
+    timeline: [{ d: '2025 Q2', t: { zh: '流動圖書車覆蓋偏遠社區', en: 'Mobile library vans reach remote communities' } }] },
+  'e3': { isl: 'education', no: 3, name: { zh: '技能地球儀', en: 'Skills Globe' }, model: 'globe', active: [420, 1200],
+    facts: [
+      { v: '37', u: { zh: '項', en: '' }, k: { zh: '課程認證', en: 'certifications' } },
+      { v: '76', u: { zh: '%', en: '' }, k: { zh: '完成率', en: 'completion rate' } }
+    ],
+    timeline: [{ d: '2026 Q1', t: { zh: '技能證書與經濟島職位系統互通', en: 'Skill certificates now link to economy island jobs' } }] },
+
+  'm1': { isl: 'health', no: 1, name: { zh: '社區診所', en: 'Community Clinic' }, model: 'clinic', active: [480, 1260],
+    facts: [
+      { v: '12', u: { zh: '間', en: '' }, k: { zh: '社區診所', en: 'community clinics' } },
+      { v: '15', u: { zh: '分鐘', en: 'min' }, k: { zh: '平均輪候', en: 'average wait' } },
+      { v: '41,000', u: { zh: '人次', en: '' }, k: { zh: '年度就診', en: 'visits per year' } }
+    ],
+    timeline: [
+      { d: '2024 Q4', t: { zh: '跨島電子病歷互通試點', en: 'Cross-island e-record pilot launched' } },
+      { d: '2025 Q3', t: { zh: '藥物配送納入夜診', en: 'Medication delivery added to night clinics' } }
+    ] },
+  'm2': { isl: 'health', no: 2, name: { zh: '康復宿舍', en: 'Recovery Housing' }, model: 'cottage', active: [0, 1440],
+    facts: [
+      { v: '86', u: { zh: '個', en: '' }, k: { zh: '宿位', en: 'beds' } },
+      { v: '3', u: { zh: '個月', en: 'mo' }, k: { zh: '平均療程', en: 'average stay' } }
+    ],
+    timeline: [{ d: '2026 Q2', t: { zh: '與房屋島合辦長者安居單位', en: 'Joint elder housing units launched with housing island' } }] },
+  'm3': { isl: 'health', no: 3, name: { zh: '健康站', en: 'Wellness Post' }, model: 'pavilion', active: [360, 1200],
+    facts: [
+      { v: '5', u: { zh: '站', en: '' }, k: { zh: '社區健康站', en: 'wellness posts' } },
+      { v: '2,300', u: { zh: '人次', en: '' }, k: { zh: '年度免費篩查', en: 'free screenings / year' } }
+    ],
+    timeline: [{ d: '2025 Q4', t: { zh: '推廣高血壓與糖尿病篩查', en: 'Blood pressure and diabetes screening scaled up' } }] },
+
+  'o1': { isl: 'housing', no: 1, name: { zh: '屋邨聯排', en: 'Estate Row' }, model: 'cottage', active: [0, 1440],
+    facts: [
+      { v: '2,640', u: { zh: '戶', en: '' }, k: { zh: '單位', en: 'units' } },
+      { v: '31', u: { zh: '個月', en: 'mo' }, k: { zh: '平均輪候', en: 'average wait' } },
+      { v: '2.4', u: { zh: '人', en: '' }, k: { zh: '平均戶人數', en: 'avg household size' } }
+    ],
+    timeline: [
+      { d: '2024 Q2', t: { zh: '首批 640 單位入伙', en: 'First 640 units occupied' } },
+      { d: '2026 Q1', t: { zh: '輪候時間首次降至 31 個月', en: 'Wait time falls to 31 months for the first time' } }
+    ] },
+  'o2': { isl: 'housing', no: 2, name: { zh: '屋邨球場', en: 'Estate Courts' }, model: 'court', active: [360, 1320],
+    facts: [
+      { v: '8', u: { zh: '個', en: '' }, k: { zh: '球場', en: 'courts' } },
+      { v: '2,700', u: { zh: '人次', en: '' }, k: { zh: '每月預約', en: 'bookings / month' } }
+    ],
+    timeline: [{ d: '2025 Q3', t: { zh: '場地預約系統與健康島共用', en: 'Booking system shared with the health island' } }] },
+  'o3': { isl: 'housing', no: 3, name: { zh: '社區農圃', en: 'Community Garden' }, model: 'farm', active: [360, 1200],
+    facts: [
+      { v: '96', u: { zh: '幅', en: '' }, k: { zh: '租出地段', en: 'allocated plots' } },
+      { v: '1,120', u: { zh: '公斤', en: 'kg' }, k: { zh: '年度收成', en: 'produce per year' } }
+    ],
+    timeline: [{ d: '2026 Q1', t: { zh: '農圃剩餘送社區食堂', en: 'Surplus produce routed to community kitchens' } }] },
+
+  'v1': { isl: 'environment', no: 1, name: { zh: '淨化河道', en: 'Clean River' }, model: 'bridge', active: [0, 1440],
+    facts: [
+      { v: '18', u: { zh: '公里', en: 'km' }, k: { zh: '復綠河道', en: 'river restored' } },
+      { v: '3.2', u: { zh: '噸', en: '' }, k: { zh: '每日減碳', en: 'CO2 cut per day' } },
+      { v: '7', u: { zh: '座', en: '' }, k: { zh: '行人橋', en: 'footbridges' } }
+    ],
+    timeline: [
+      { d: '2024 Q3', t: { zh: '河道復綠第一階段完成', en: 'River greening phase one completed' } },
+      { d: '2026 Q2', t: { zh: '碳數據接入交通島規劃系統', en: 'Carbon data feeds the transport planning system' } }
+    ] },
+  'v2': { isl: 'environment', no: 2, name: { zh: '林蔭廣場', en: 'Shaded Plaza' }, model: 'court', active: [360, 1320],
+    facts: [
+      { v: '1,900', u: { zh: '棵', en: '' }, k: { zh: '新種樹木', en: 'trees planted' } },
+      { v: '3.6', u: { zh: '°C', en: '°C' }, k: { zh: '降溫幅度', en: 'cooling effect' } }
+    ],
+    timeline: [{ d: '2025 Q2', t: { zh: '社區農圃與林蔭廣場合併管理', en: 'Community gardens merged under one green programme' } }] },
+  'v3': { isl: 'environment', no: 3, name: { zh: '回收站', en: 'Recycling Point' }, model: 'pavilion', active: [300, 1320],
+    facts: [
+      { v: '4,900', u: { zh: '噸', en: 't' }, k: { zh: '年度回收量', en: 'recycled per year' } },
+      { v: '52', u: { zh: '%', en: '' }, k: { zh: '分類回收率', en: 'sorted recycling rate' } }
+    ],
+    timeline: [{ d: '2026 Q3', t: { zh: '玻璃回收接入經濟島回收商', en: 'Glass recycling linked to economy island dealers' } }] },
+
+  'c1': { isl: 'economy', no: 1, name: { zh: '稅務大樓', en: 'Revenue House' }, model: 'coin', active: [480, 1140],
+    facts: [
+      { v: '1,240', u: { zh: '億', en: 'bn' }, k: { zh: '年度稅收', en: 'annual revenue' } },
+      { v: '3.2', u: { zh: '%', en: '' }, k: { zh: '增長率', en: 'growth rate' } },
+      { v: '9', u: { zh: '個月', en: 'mo' }, k: { zh: '平均退稅時間', en: 'refund turnaround' } }
+    ],
+    timeline: [
+      { d: '2024 Q4', t: { zh: '電子報稅全面推行', en: 'Full e-filing rollout completed' } },
+      { d: '2026 Q1', t: { zh: '退稅自動轉入房屋島配額評估', en: 'Refunds auto-feed housing quota assessment' } }
+    ] },
+  'c2': { isl: 'economy', no: 2, name: { zh: '工場與宿舍', en: 'Workshops & Hostels' }, model: 'cottage', active: [360, 1200],
+    facts: [
+      { v: '640', u: { zh: '個', en: '' }, k: { zh: '職位', en: 'jobs' } },
+      { v: '74', u: { zh: '%', en: '' }, k: { zh: '本地聘用率', en: 'local hiring rate' } },
+      { v: '48', u: { zh: '間', en: '' }, k: { zh: '僱員宿舍', en: 'hostel rooms' } }
+    ],
+    timeline: [{ d: '2025 Q4', t: { zh: '技能島證書直接對接職位', en: 'Education certificates now map directly to jobs' } }] },
+  'c3': { isl: 'economy', no: 3, name: { zh: '市集攤位', en: 'Market Stalls' }, model: 'stall', active: [540, 1260],
+    facts: [
+      { v: '210', u: { zh: '個', en: '' }, k: { zh: '攤位', en: 'stalls' } },
+      { v: '1,050', u: { zh: '個', en: '' }, k: { zh: '檔口', en: 'vendors' } },
+      { v: '4', u: { zh: '場', en: '' }, k: { zh: '每週墟市', en: 'markets per week' } }
+    ],
+    timeline: [{ d: '2026 Q2', t: { zh: '墟市食品空氣與碳排標準', en: 'Food market air and carbon standards applied' } }] }
+};
+
+/* ---------- flows (協作線) ---------- */
+const FLOWS = [
+  { id: 'f1', from: 'transport', to: 'education', kind: 'official', ev: 'A', carry: { zh: '校車路線圖', en: 'school bus map' }, icon: 'bus',
+    note: { zh: '交通局每學期按新校網更新校車路線，確保全校學生 15 分鐘內到校。', en: 'Transport updates school bus routes each term so every pupil is within 15 minutes of school.' } },
+  { id: 'f2', from: 'education', to: 'health', kind: 'thematic', ev: 'B', carry: { zh: '共享健康紀錄', en: 'shared health record' }, icon: 'cross',
+    note: { zh: '學校健康組把學生病歷摘要送社區診所，轉介個案平均快 3 日。', en: 'School health teams send student case summaries to clinics — referral is 3 days faster.' } },
+  { id: 'f3', from: 'health', to: 'housing', kind: 'official', ev: 'A', carry: { zh: '社區診所名單', en: 'clinic directory' }, icon: 'building',
+    note: { zh: '診所開位與長者宿位同步規劃，避免長者要跨區求醫。', en: 'Clinic slots and elder beds are planned together so nobody travels across districts for care.' } },
+  { id: 'f4', from: 'housing', to: 'economy', kind: 'official', ev: 'A', carry: { zh: '房屋配額數據', en: 'housing quota data' }, icon: 'home',
+    note: { zh: '屋邨單位與工位數據互通，讓經濟島算出每個屋邨的就業承載力。', en: 'Unit and job counts are shared so the economy island can model employment capacity per estate.' } },
+  { id: 'f5', from: 'economy', to: 'transport', kind: 'pending', ev: 'C', carry: { zh: '隧道通行模型', en: 'tunnel traffic model' }, icon: 'coin',
+    note: { zh: '隧道收費方案仍在評估，模型一旦確認就會變成交通島的路線改動。', en: 'The tunnel charging model is still under review; once confirmed it becomes a route change on the transport island.' } },
+  { id: 'f6', from: 'environment', to: 'transport', kind: 'thematic', ev: 'B', carry: { zh: '單車網絡規劃', en: 'cycle network plan' }, icon: 'bike',
+    note: { zh: '環境島沿河道鋪設的單車徑直接接入交通島的接駁時間計算。', en: 'River-side cycle paths feed straight into the transport island transfer-time model.' } },
+  { id: 'f7', from: 'transport', to: 'environment', kind: 'official', ev: 'A', carry: { zh: '車流排放數據', en: 'traffic emission data' }, icon: 'bus',
+    note: { zh: '每日車流數據回傳環境島，計算沿線空氣質素與碳排。', en: 'Daily traffic data flows back to the environment island for roadside air and carbon modelling.' } },
+  { id: 'f8', from: 'education', to: 'economy', kind: 'thematic', ev: 'B', carry: { zh: '技能證書', en: 'skills certificate' }, icon: 'book',
+    note: { zh: '技能證書島的課程證書即時開放予經濟島的僱主查核。', en: 'Certificates issued on the skills island become instantly verifiable by employers on the economy island.' } },
+  { id: 'f9', from: 'environment', to: 'housing', kind: 'official', ev: 'A', carry: { zh: '綠化建築標準', en: 'green building standard' }, icon: 'tree',
+    note: { zh: '新建屋苑必須符合降溫 3°C 標準，由環境島核發認證。', en: 'New estates must meet the 3°C cooling standard, certified by the environment island.' } },
+  { id: 'f10', from: 'health', to: 'economy', kind: 'pending', ev: 'C', carry: { zh: '長者照護預算', en: 'elder-care budget' }, icon: 'heart',
+    note: { zh: '長者照護預算案待批，一旦通過會調整經濟島的撥款分配。', en: 'The elder-care budget is awaiting approval; once passed it reshuffles economic island allocations.' } },
+  { id: 'f11', from: 'housing', to: 'education', kind: 'official', ev: 'A', carry: { zh: '校舍需求清單', en: 'school demand list' }, icon: 'home',
+    note: { zh: '屋邨入伙時間表直接決定教育島要加開幾多班。', en: 'Estate move-in schedules directly determine how many classes the education island opens.' } },
+  { id: 'f12', from: 'economy', to: 'hub', kind: 'official', ev: 'A', carry: { zh: '稅收影響估算', en: 'revenue impact note' }, icon: 'coin',
+    note: { zh: '所有政策的財政影響估算都送市政廳覆核，先可以正式推行。', en: 'Every policy impact estimate is sent to city hall for sign-off before it can launch.' } }
+];
+
+/* 島的位置：中心市政 + 6 座環形島 */
+const ISL_R = 22;             // 環島半徑
+const ISL_POS = {};
+ISLANDS.forEach((I, i) => {
+  if (I.ang === null) { ISL_POS[I.id] = new THREE.Vector2(0, 0); return; }
+  const a = I.ang * Math.PI / 180;
+  ISL_POS[I.id] = new THREE.Vector2(Math.cos(a) * ISL_R, Math.sin(a) * ISL_R);
+});
+const ISL_BY_ID = {};
+ISLANDS.forEach(I => ISL_BY_ID[I.id] = I);
+
+/* ============ 02 · scene core: renderer / camera / lights / day-night ============ */
+const QS = new URLSearchParams(location.search);
+const QUALITY = QS.get('q') || 'auto';         // auto | low | high
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: QUALITY !== 'low', powerPreference: 'high-performance' });
+renderer.setPixelRatio(QUALITY === 'low' ? 0.6 : Math.min(window.devicePixelRatio || 1, 1.4));
+renderer.shadowMap.enabled = QUALITY !== 'low';
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xaee0ee, 70, 210);
+
+const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 400);
+camera.position.set(34, 18, 54);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.075;
+controls.minDistance = 12;
+controls.maxDistance = 110;
+controls.maxPolarAngle = Math.PI * 0.487;
+controls.target.set(0, 7, 0);
+controls.enablePan = true;
+
+/* ---------- CSS2D ---------- */
+/* CSS2DRenderer 在 constructor 就鎖定 domElement（parameters.element），
+   事後賦值 labelRenderer.domElement 唔會生效 → 必須傳入 element 參數 */
+const labelHost = document.getElementById('css2d');
+const labelRenderer = new CSS2DRenderer({ element: labelHost });
+labelHost.style.position = 'absolute';
+labelHost.style.top = '0';
+labelHost.style.left = '0';
+labelHost.style.pointerEvents = 'none';
+labelHost.style.overflow = 'hidden';
+document.getElementById('app').appendChild(labelHost);
+
+/* ---------- lights ---------- */
+const hemi = new THREE.HemisphereLight(0xbfe4f2, 0x6b6154, 0.75);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff0d8, 1.5);
+sun.castShadow = QUALITY !== 'low';
+sun.shadow.mapSize.set(QUALITY === 'low' ? 1024 : 2048, QUALITY === 'low' ? 1024 : 2048);
+sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
+sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 220;
+sun.shadow.bias = -0.0006;
+scene.add(sun); scene.add(sun.target);
+const moon = new THREE.DirectionalLight(0x9fb6ff, 0.0);
+moon.position.set(-30, 40, -20);
+scene.add(moon);
+
+/* ---------- sky dome ---------- */
+const skyUniforms = {
+  topColor: { value: new THREE.Color(0x2f6fb5) },
+  midColor: { value: new THREE.Color(0x9fd4ec) },
+  botColor: { value: new THREE.Color(0xf7e2c4) },
+  sunDir: { value: new THREE.Vector3(0, 1, 0) },
+  sunColor: { value: new THREE.Color(0xfff0d8) },
+  night: { value: 0 }
+};
+const skyMat = new THREE.ShaderMaterial({
+  uniforms: skyUniforms, side: THREE.BackSide, depthWrite: false,
+  vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);} `,
+  fragmentShader: `
+    uniform vec3 topColor, midColor, botColor, sunColor, sunDir; uniform float night; varying vec3 vP;
+    void main(){
+      vec3 d = normalize(vP);
+      float h = d.y*0.5+0.5;
+      vec3 c = mix(botColor, midColor, smoothstep(0.42,0.55,h));
+      c = mix(c, topColor, smoothstep(0.52,0.92,h));
+      float sd = max(dot(d, normalize(sunDir)), 0.0);
+      c += sunColor * pow(sd, 320.0) * 1.6 * (1.0-night);
+      c += sunColor * pow(sd, 9.0) * 0.20 * (1.0-night);
+      c = mix(c, vec3(0.05,0.07,0.16), night*0.72);
+      gl_FragColor = vec4(c,1.0);
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(320, 32, 20), skyMat);
+scene.add(sky);
+
+/* ---------- sea ---------- */
+const seaUniforms = {
+  uTime: { value: 0 }, uNight: { value: 0 },
+  uShallow: { value: new THREE.Color(0x7fd3d8) }, uDeep: { value: new THREE.Color(0x2a6b8f) }
+};
+const seaMat = new THREE.ShaderMaterial({
+  uniforms: seaUniforms, transparent: true,
+  vertexShader: `
+    uniform float uTime; varying vec3 vP; varying float vW;
+    void main(){ vP = position; vec3 p = position;
+      float w = sin(p.x*0.16 + uTime*0.9)*0.16 + sin(p.y*0.13 - uTime*0.7)*0.14;
+      p.z += w; vW = w;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p,1.0); }`,
+  fragmentShader: `
+    uniform vec3 uShallow, uDeep; uniform float uNight, uTime; varying vec3 vP; varying float vW;
+    void main(){
+      float r = length(vP.xy);
+      vec3 c = mix(uShallow, uDeep, smoothstep(10.0, 150.0, r));
+      c += vW*0.55;
+      float sparkle = smoothstep(0.86, 1.0, sin(vP.x*0.9 + uTime*1.7)*sin(vP.y*0.75 - uTime*1.3));
+      c += sparkle*0.10*(1.0-uNight);
+      c = mix(c, vec3(0.04,0.07,0.15), uNight*0.62);
+      gl_FragColor = vec4(c, 0.93);
+    }`
+});
+const sea = new THREE.Mesh(new THREE.PlaneGeometry(600, 600, 96, 96), seaMat);
+sea.rotation.x = -Math.PI / 2;
+sea.position.y = -1.15;
+scene.add(sea);
+
+/* ---------- clock ---------- */
+const Clock = {
+  minutes: 600,               // 10:00
+  speed: 10,                  // 每秒 10 分鐘 → 一天 144 秒
+  paused: false,
+  get hour() { return Math.floor(this.minutes / 60) % 24; },
+  get min() { return Math.floor(this.minutes % 60); },
+  get label() { return String(this.hour).padStart(2, '0') + ':' + String(this.min).padStart(2, '0'); },
+  set(h, m) { this.minutes = (h % 24) * 60 + (m || 0); }
+};
+
+/* ---------- day / night ---------- */
+const DAY_COLS = {
+  dawnTop: 0x3d6fa8, dawnMid: 0xf0b183, dawnBot: 0xfbe3c0,
+  dayTop: 0x2f6fb5, dayMid: 0x9fd4ec, dayBot: 0xd9eef6,
+  duskTop: 0x3a4f8c, duskMid: 0xf0916a, duskBot: 0xffd6a8,
+  nightTop: 0x080e22, nightMid: 0x152241, nightBot: 0x27355c
+};
+const cA = new THREE.Color(), cB = new THREE.Color(), cC = new THREE.Color();
+function mixCol(out, a, b, t) { out.setHex(a); cB.setHex(b); out.lerp(cB, t); return out; }
+
+const STATE = {
+  night: 0, day: 1, elapsed: 0, dirty: true,
+  reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+};
+STATE.reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function updateDayCycle(dt) {
+  if (!Clock.paused && !STATE.reduced) {
+    Clock.minutes = (Clock.minutes + dt * Clock.speed) % 1440;
+  }
+  const min = Math.round(Clock.minutes / 10) * 10;   // 量化到 10 分鐘
+  const t = clamp((min - 360) / 720, 0, 1);
+  const az = Math.PI * (0.15 + 0.7 * t);
+  const el = 0.35 + Math.sin(t * Math.PI) * 0.75;
+  const dir = new THREE.Vector3(Math.cos(az) * Math.cos(el), Math.sin(el), 0.55 * Math.cos(el) + 0.35).normalize();
+  sun.position.copy(dir).multiplyScalar(40);
+  sun.target.position.set(0, 0, 0);
+  skyUniforms.sunDir.value.copy(dir);
+
+  // night factor 0..1 —— 由時鐘決定（太陽方位公式在 18:00 後 t 被 clamp，
+  // 只用 el 會令 21:00 變成黃昏，所以夜間光照用鐘點推算）
+  const dayWin = smoothstep(300, 420, min) * (1 - smoothstep(1020, 1170, min));
+  const night = 1 - dayWin;
+  STATE.night = night;
+  STATE.day = 1 - night;
+  skyUniforms.night.value = night;
+  seaUniforms.uNight.value = night;
+
+  // sky colours
+  const top = new THREE.Color(), mid = new THREE.Color(), bot = new THREE.Color();
+  if (el < 0.42) { // dawn / dusk
+    const k = smoothstep(0.12, 0.42, el);
+    top.setHex(DAY_COLS.duskTop).lerp(cA.setHex(DAY_COLS.dayTop), k);
+    mid.setHex(DAY_COLS.duskMid).lerp(cA.setHex(DAY_COLS.dayMid), k);
+    bot.setHex(DAY_COLS.duskBot).lerp(cA.setHex(DAY_COLS.dayBot), k);
+  } else {
+    top.setHex(DAY_COLS.dayTop); mid.setHex(DAY_COLS.dayMid); bot.setHex(DAY_COLS.dayBot);
+  }
+  // night blend
+  top.lerp(cA.setHex(DAY_COLS.nightTop), night);
+  mid.lerp(cA.setHex(DAY_COLS.nightMid), night);
+  bot.lerp(cA.setHex(DAY_COLS.nightBot), night);
+  skyUniforms.topColor.value.copy(top);
+  skyUniforms.midColor.value.copy(mid);
+  skyUniforms.botColor.value.copy(bot);
+  scene.fog.color.copy(mid).lerp(cA.setHex(0x0d1730), night * 0.8);
+  renderer.setClearColor(scene.fog.color);
+
+  // lights: 夜晚 hemi 反而較強（冷藍但看得清楚）
+  hemi.color.setHex(0xbfe4f2).lerp(cA.setHex(0x6f86c8), night);
+  hemi.groundColor.setHex(0x6b6154).lerp(cA.setHex(0x22283c), night);
+  hemi.intensity = lerp(0.75, 1.05, night);
+  sun.intensity = lerp(1.55, 0.16, night);
+  sun.color.setHex(0xfff0d8).lerp(cA.setHex(0xffb27a), night * 0.7);
+  moon.intensity = night * 0.55;
+  moon.position.set(-dir.x * 40, 40, -dir.z * 40);
+  seaUniforms.uShallow.value.setHex(0x7fd3d8).lerp(cA.setHex(0x2c4a6e), night);
+  seaUniforms.uDeep.value.setHex(0x2a6b8f).lerp(cA.setHex(0x0c1c38), night);
+
+  // emissive night glow
+  const gi = 0.05 + night * 3.2;
+  if (typeof window.__setGlow === 'function') window.__setGlow(gi);
+  if (typeof window.__setLampPool === 'function') window.__setLampPool(night);
+  if (typeof window.__setIslandLights === 'function') window.__setIslandLights(night);
+
+  const ce = document.getElementById('clockTxt');
+  if (ce) ce.textContent = Clock.label;
+  STATE.dirty = true;
+}
+
+/* ============ 03 · terrain basin + background trees + mountains + clouds + sea props ============ */
+
+/* ---------- 盆地地形 ---------- */
+const TERRAIN_SIZE = 170, TERRAIN_SEG = 160;
+const terrainGeo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_SEG, TERRAIN_SEG);
+terrainGeo.rotateX(-Math.PI / 2);
+{
+  const pos = terrainGeo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const cRiver = new THREE.Color(0x8fb3ad), cSand = new THREE.Color(0xd9c9a3),
+    cField = new THREE.Color(0xaec493), cGrass = new THREE.Color(0xa3b986),
+    cForest = new THREE.Color(0x6f8a62), cRock = new THREE.Color(0xb2a38d);
+  const tmp = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i);
+    const r = Math.hypot(x, z);
+    // 環狀山：半徑 34–74 之間用 smoothstep 隆起（城市盆地 r<32 保持低地）
+    let h = smoothstep(34, 48, r) * (1 - smoothstep(58, 78, r)) * 15.0;
+    // fbm 噪聲
+    h += (fbm(x * 0.035 + 11, z * 0.035 + 7) - 0.5) * 7.5 * smoothstep(30, 44, r);
+    h += (fbm(x * 0.11 + 3, z * 0.11 + 19) - 0.5) * 2.1 * smoothstep(26, 38, r);
+    // 梯田量化
+    if (h > 0.6) h = Math.round(h / 1.15) * 1.15 + (fbm(x * 0.5, z * 0.5) - 0.5) * 0.34;
+    // 城市盆地：r<32 壓到海平面下（島嶼浮在潟湖上）
+    h -= (1 - smoothstep(8, 32, r)) * 4.2;
+    // 鏡頭那一側（+z）壓低並沉入潟湖之下，避免前景綠色台地擋住城市
+    const camSide = clamp((z + 12) / 46, 0, 1);
+    h *= lerp(1, 0.10, camSide * smoothstep(16, 36, r));
+    h -= camSide * smoothstep(20, 46, r) * 5.0;
+    // 外圈沉入海面（否則地形平面邊緣會變成一大片綠色台地）
+    h -= smoothstep(68, 84, r) * 9.0;
+    pos.setY(i, h);
+    // 依高度上頂點色
+    const hy = h;
+    if (hy < -1.0) tmp.copy(cRiver);
+    else if (hy < 0.7) tmp.copy(cRiver).lerp(cSand, smoothstep(-1.0, 0.7, hy));
+    else if (hy < 2.6) tmp.copy(cSand).lerp(cField, smoothstep(0.7, 2.6, hy));
+    else if (hy < 5.2) tmp.copy(cField).lerp(cGrass, smoothstep(2.6, 5.2, hy));
+    else if (hy < 9.0) tmp.copy(cGrass).lerp(cForest, smoothstep(5.2, 9.0, hy));
+    else tmp.copy(cForest).lerp(cRock, smoothstep(9.0, 13.0, hy));
+    colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
+  }
+  terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  terrainGeo.computeVertexNormals();
+}
+const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({
+  vertexColors: true, flatShading: true, roughness: 0.95, metalness: 0
+}));
+terrain.receiveShadow = true;
+scene.add(terrain);
+
+function terrainHeight(x, z) {
+  const r = Math.hypot(x, z);
+  let h = smoothstep(34, 48, r) * (1 - smoothstep(58, 78, r)) * 15.0;
+  h += (fbm(x * 0.035 + 11, z * 0.035 + 7) - 0.5) * 7.5 * smoothstep(30, 44, r);
+  h += (fbm(x * 0.11 + 3, z * 0.11 + 19) - 0.5) * 2.1 * smoothstep(26, 38, r);
+  if (h > 0.6) h = Math.round(h / 1.15) * 1.15 + (fbm(x * 0.5, z * 0.5) - 0.5) * 0.34;
+  h -= (1 - smoothstep(8, 32, r)) * 4.2;
+  const camSide = clamp((z + 12) / 46, 0, 1);
+  h *= lerp(1, 0.10, camSide * smoothstep(16, 36, r));
+  h -= camSide * smoothstep(20, 46, r) * 5.0;
+  h -= smoothstep(68, 84, r) * 9.0;
+  return h;
+}
+
+/* ---------- 背景樹 ---------- */
+function coniferGeo() {
+  const parts = [];
+  for (let i = 0; i < 3; i++) {
+    const g = new THREE.ConeGeometry(0.62 - i * 0.14, 1.05 - i * 0.16, 7);
+    g.translate(0, 0.52 + i * 0.48, 0);
+    parts.push(g);
+  }
+  const trunk = new THREE.CylinderGeometry(0.1, 0.13, 0.55, 6);
+  trunk.translate(0, 0.26, 0);
+  parts.push(trunk);
+  return mergeGeometries(parts.map(ni), false);
+}
+function broadleafGeo() {
+  const parts = [];
+  const trunk = new THREE.CylinderGeometry(0.1, 0.14, 0.7, 6);
+  trunk.translate(0, 0.35, 0);
+  parts.push(trunk);
+  const blobs = [[0, 1.05, 0, 0.60], [0.34, 0.86, 0.18, 0.44], [-0.30, 0.92, -0.14, 0.40], [0.06, 1.32, -0.22, 0.38]];
+  for (const [x, y, z, s] of blobs) {
+    const g = new THREE.IcosahedronGeometry(s, 0);
+    g.translate(x, y, z);
+    parts.push(g);
+  }
+  return mergeGeometries(parts.map(ni), false);
+}
+/* mergeGeometries 需要一致的 index/attribute：IcosahedronGeometry 無 index，
+   其餘都有 → 全部轉成 non-indexed 再合併，否則 merge 回傳 null */
+function ni(g) { return g.index ? g.toNonIndexed() : g; }
+
+const TREE_N = QUALITY === 'low' ? 900 : 3400;
+const treeMat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.92, metalness: 0, color: 0xffffff });
+const treeConifer = new THREE.InstancedMesh(coniferGeo(), treeMat, Math.floor(TREE_N * 0.55));
+const treeBroad = new THREE.InstancedMesh(broadleafGeo(), treeMat, TREE_N - Math.floor(TREE_N * 0.55));
+treeConifer.castShadow = false; treeConifer.receiveShadow = false;
+treeBroad.castShadow = false; treeBroad.receiveShadow = false;
+{
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
+  let ci = 0, bi = 0, maxC = treeConifer.count, maxB = treeBroad.count;
+  let guard = 0;
+  while ((ci < maxC || bi < maxB) && guard < TREE_N * 12) {
+    guard++;
+    const a = RNG() * TAU, rr = 30 + RNG() * 44;
+    const x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+    const h = terrainHeight(x, z);
+    if (h < 0.25) continue;                      // 水下不種樹
+    const camSide = clamp((z + 12) / 46, 0, 1);
+    if (RNG() < camSide * 0.55) continue;         // 鏡頭側稀疏
+    const sc = 0.75 + RNG() * 0.85;
+    p.set(x, h - 0.1, z);
+    q.setFromEuler(new THREE.Euler(0, RNG() * TAU, 0));
+    s.set(sc * (0.85 + RNG() * 0.3), sc, sc * (0.85 + RNG() * 0.3));
+    m.compose(p, q, s);
+    const green = new THREE.Color().setHSL(0.24 + RNG() * 0.07, 0.30 + RNG() * 0.16, 0.24 + RNG() * 0.16);
+    if (ci < maxC) { treeConifer.setMatrixAt(ci, m); treeConifer.setColorAt(ci, green); ci++; }
+    else if (bi < maxB) { treeBroad.setMatrixAt(bi, m); treeBroad.setColorAt(bi, green); bi++; }
+  }
+  for (let i = ci; i < maxC; i++) { m.makeScale(0, 0, 0); treeConifer.setMatrixAt(i, m); }
+  for (let i = bi; i < maxB; i++) { m.makeScale(0, 0, 0); treeBroad.setMatrixAt(i, m); }
+  treeConifer.instanceMatrix.needsUpdate = true; treeBroad.instanceMatrix.needsUpdate = true;
+  if (treeConifer.instanceColor) treeConifer.instanceColor.needsUpdate = true;
+  if (treeBroad.instanceColor) treeBroad.instanceColor.needsUpdate = true;
+}
+scene.add(treeConifer); scene.add(treeBroad);
+
+/* ---------- 三圈遠山剪影帶 ---------- */
+const silhouetteBands = [];
+{
+  const bands = [
+    { r: 118, h: 20, c: 0x7d9b8d, o: 1.0 },
+    { r: 158, h: 28, c: 0x8fa9a3, o: 1.0 },
+    { r: 208, h: 38, c: 0xa3b6b6, o: 1.0 }
+  ];
+  for (const b of bands) {
+    const g = new THREE.CylinderGeometry(b.r, b.r * 0.94, b.h, 72, 1, true);
+    const col = new THREE.Color(b.c);
+    const geo = g;
+    // 起伏的山脊：頂點擾動
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      if (y > 0) {
+        const ang = Math.atan2(z, x);
+        p.setY(i, y + (fbm(ang * 6 + b.r, b.r * 0.3) - 0.5) * b.h * 0.55);
+      }
+    }
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, side: THREE.BackSide, fog: false, transparent: true, opacity: 0.95 }));
+    mesh.position.y = b.h * 0.16 - 3;
+    mesh.renderOrder = -5;
+    scene.add(mesh);
+    silhouetteBands.push(mesh);
+  }
+}
+
+/* ---------- 12 團雲 ---------- */
+const clouds = [];
+{
+  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true, roughness: 1, metalness: 0, transparent: true, opacity: 0.9 });
+  for (let i = 0; i < 12; i++) {
+    const g = new THREE.Group();
+    const n = 4 + Math.floor(RNG() * 3);
+    for (let j = 0; j < n; j++) {
+      const r = 2.0 + RNG() * 2.4;
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), cloudMat);
+      m.position.set((RNG() - 0.5) * 7, (RNG() - 0.5) * 1.6, (RNG() - 0.5) * 4.5);
+      m.scale.y = 0.55;
+      g.add(m);
+    }
+    g.position.set(-110 + RNG() * 220, 26 + RNG() * 22, -90 + RNG() * 180);
+    g.userData.speed = 0.5 + RNG() * 0.55;
+    g.userData.x0 = g.position.x;
+    scene.add(g);
+    clouds.push(g);
+  }
+}
+
+/* ---------- 海上點綴：小島、燈塔、帆船 ---------- */
+const seaProps = [];
+{
+  const sandMat = new THREE.MeshStandardMaterial({ color: 0xd9c9a3, flatShading: true, roughness: 0.95 });
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0xb2a38d, flatShading: true, roughness: 1 });
+  const spots = [[-52, -44], [64, -30], [-38, 56], [72, 48], [8, -74]];
+  for (const [x, z] of spots) {
+    const g = new THREE.Group();
+    const r = 2.4 + RNG() * 3.4;
+    const base = new THREE.Mesh(new THREE.ConeGeometry(r, r * 0.55, 9), rockMat);
+    base.position.y = r * 0.275 - 1.0;
+    g.add(base);
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.78, 0.4, 9), sandMat);
+    top.position.y = r * 0.55 - 1.0;
+    g.add(top);
+    const palm = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.14, 2.0, 6), new THREE.MeshStandardMaterial({ color: 0xb48560, flatShading: true }));
+    trunk.position.y = 1.0; palm.add(trunk);
+    for (let k = 0; k < 5; k++) {
+      const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.7, 5), new THREE.MeshStandardMaterial({ color: 0x8db86f, flatShading: true }));
+      leaf.position.set(0, 2.0, 0);
+      leaf.rotation.z = Math.PI / 2.6;
+      leaf.rotation.y = (k / 5) * TAU;
+      const piv = new THREE.Group(); piv.rotation.y = (k / 5) * TAU;
+      leaf.rotation.set(0, 0, Math.PI / 2.6);
+      leaf.position.set(Math.cos((k / 5) * TAU) * 0.8, 2.0, Math.sin((k / 5) * TAU) * 0.8);
+      piv.add(leaf); palm.add(piv);
+    }
+    palm.position.y = r * 0.55 - 0.8;
+    g.add(palm);
+    g.position.set(x, 0, z);
+    g.userData.bob = RNG() * TAU;
+    scene.add(g);
+    seaProps.push({ obj: g, kind: 'islet' });
+  }
+  // 燈塔
+  const lh = new THREE.Group();
+  const lhMat = new THREE.MeshStandardMaterial({ color: 0xfff8f4, flatShading: true, roughness: 0.8 });
+  const lhRed = new THREE.MeshStandardMaterial({ color: 0xdb6a41, flatShading: true, roughness: 0.8 });
+  const lhBase = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.3, 0.9, 10), rockMat); lhBase.position.y = -0.7; lh.add(lhBase);
+  for (let i = 0; i < 4; i++) {
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.62 - i * 0.05, 0.68 - i * 0.05, 1.5, 10), i % 2 ? lhRed : lhMat);
+    seg.position.y = 0.55 + i * 1.45; lh.add(seg);
+  }
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), new THREE.MeshStandardMaterial({ color: 0xffc777, emissive: 0xffc777, emissiveIntensity: 0.2 }));
+  lamp.position.y = 6.4; lh.add(lamp);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.9, 10), lhRed); cap.position.y = 7.1; lh.add(cap);
+  lh.position.set(-16, 0, -34);
+  scene.add(lh);
+  const lhLight = new THREE.PointLight(0xffc777, 0, 26, 2);
+  lhLight.position.set(-16, 6.4, -34);
+  scene.add(lhLight);
+  seaProps.push({ obj: lh, kind: 'lighthouse', lamp, light: lhLight });
+
+  // 帆船
+  for (let i = 0; i < 3; i++) {
+    const b = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.55, 0.9), new THREE.MeshStandardMaterial({ color: [0xdb6a41, 0xfcea8b, 0x3e7c8c][i], flatShading: true, roughness: 0.7 }));
+    hull.position.y = 0.1; b.add(hull);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 2.6, 6), new THREE.MeshStandardMaterial({ color: 0xb48560, flatShading: true }));
+    mast.position.y = 1.6; b.add(mast);
+    const sail = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.0, 3), new THREE.MeshStandardMaterial({ color: 0xfff8f4, flatShading: true, roughness: 0.8 }));
+    sail.position.set(0.35, 1.75, 0); sail.rotation.z = -Math.PI / 2; sail.scale.z = 0.22;
+    b.add(sail);
+    b.position.set(-30 + i * 26, -0.85, 22 + i * 9);
+    b.userData.phase = RNG() * TAU; b.userData.radius = 16 + i * 5; b.userData.speed = 0.10 + i * 0.03;
+    scene.add(b);
+    seaProps.push({ obj: b, kind: 'boat' });
+  }
+}
+
+/* ============ 04 · instanced part kit + island construction ============ */
+const ISL_TOP = 1.40;          // 島面高度
+const ISL_RAD = 7.4;           // 六角島半徑
+const RING_R = 5.8;            // 路網環半徑
+
+/* ---------- geometry kinds ---------- */
+const KITS = {
+  box: { geo: new THREE.BoxGeometry(1, 1, 1), glow: false },
+  rbox: { geo: new RoundedBoxGeometry(1, 1, 1, 2, 0.12), glow: false },
+  cylinder: { geo: new THREE.CylinderGeometry(0.5, 0.5, 1, 14), glow: false },
+  cone: { geo: new THREE.ConeGeometry(0.5, 1, 14), glow: false },
+  sphere: { geo: new THREE.SphereGeometry(0.5, 16, 12), glow: false },
+  ico: { geo: new THREE.IcosahedronGeometry(0.5, 1), glow: false },
+  dome: { geo: new THREE.SphereGeometry(0.5, 16, 8, 0, TAU, 0, Math.PI / 2), glow: false },
+  torus: { geo: new THREE.TorusGeometry(0.38, 0.12, 8, 18), glow: false },
+  prism: { geo: new THREE.CylinderGeometry(0.5, 0.5, 1, 3), glow: false },
+  hip: { geo: (() => { const g = new THREE.ConeGeometry(0.72, 1, 4); g.rotateY(Math.PI / 4); return g; })(), glow: false },
+  glowbox: { geo: new THREE.BoxGeometry(1, 1, 1), glow: true },
+  glowsphere: { geo: new THREE.SphereGeometry(0.5, 12, 10), glow: true }
+};
+const kitList = {};                       // kind -> [{m, color, item, island}]
+for (const k in KITS) kitList[k] = [];
+
+const MAT = {
+  solid: new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0, flatShading: false }),
+  glow: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0, emissive: new THREE.Color(0xffc777), emissiveIntensity: 0.05 })
+};
+const kitMeshes = {};                     // kind -> InstancedMesh
+
+/* push a part in unit space; builder applies model→world transform */
+function makeBuilder(origin, scale, rotY) {
+  const base = new THREE.Matrix4().compose(
+    origin,
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0)),
+    new THREE.Vector3(scale, scale, scale));
+  return {
+    push(kind, x, y, z, sx, sy, sz, color, rx = 0, ry = 0, rz = 0, item = null, island = null) {
+      const j = 1 + (Math.random() * 2 - 1) * 0.0072;   // 防 z-fighting 抖動
+      const local = new THREE.Matrix4().compose(
+        new THREE.Vector3(x, y, z),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)),
+        new THREE.Vector3(sx * j, sy * j, sz * j));
+      const world = base.clone().multiply(local);
+      kitList[kind].push({ m: world, color: new THREE.Color(color), item, island, base: new THREE.Color(color) });
+    }
+  };
+}
+
+/* ---------- geometry helpers (unit space) ---------- */
+function hipRoof(b, w, d, h, y, color, item, island) { b.push('hip', 0, y + h / 2, 0, w, h, d, color, 0, Math.PI / 4, 0, item, island); }
+function win(b, x, y, z, w, h, d, item, island, rot = 0) { b.push('glowbox', x, y, z, w, h, d, PAL.win, 0, rot, 0, item, island); }
+
+/* ---------- 12+ archetypes ---------- */
+const ARCH = {};
+ARCH.hall = (b, item, isl) => {
+  b.push('rbox', 0, 0.34, 0, 1.0, 0.68, 0.92, PAL.wall, 0, 0, 0, item, isl);
+  hipRoof(b, 1.12, 1.02, 0.34, 0.68, PAL.coral, item, isl);
+  b.push('box', 0, 0.70, 0.47, 1.16, 0.09, 0.14, PAL.eave, 0, 0, 0, item, isl);
+  win(b, -0.28, 0.40, 0.47, 0.22, 0.20, 0.05, item, isl);
+  win(b, 0.28, 0.40, 0.47, 0.22, 0.20, 0.05, item, isl);
+  b.push('rbox', 0.28, 0.30, -0.30, 0.26, 0.60, 0.26, PAL.stone, 0, 0, 0, item, isl);   // 鐘塔
+  b.push('cone', 0.28, 0.72, -0.30, 0.34, 0.24, 0.34, PAL.eave, 0, 0, 0, item, isl);
+  b.push('cylinder', 0.28, 0.63, -0.30, 0.16, 0.06, 0.16, PAL.cream, Math.PI / 2, 0, 0, item, isl);
+  b.push('box', 0, 0.16, 0.47, 0.18, 0.32, 0.04, PAL.wood, 0, 0, 0, item, isl);         // 門
+  b.push('cylinder', -0.42, 0.22, 0.42, 0.09, 0.44, 0.09, PAL.stone, 0, 0, 0, item, isl);
+  b.push('sphere', -0.42, 0.48, 0.42, 0.16, 0.16, 0.16, PAL.plant[1], 0, 0, 0, item, isl);
+};
+ARCH.clock = (b, item, isl) => {
+  b.push('cylinder', 0, 0.10, 0, 1.05, 0.20, 1.05, PAL.stone, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.52, 0, 0.44, 0.72, 0.40, PAL.cream, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.92, 0, 0.60, 0.22, 0.60, PAL.coral, 0, 0, 0, item, isl);
+  b.push('cone', 0, 1.12, 0, 0.44, 0.24, 0.44, PAL.eave, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.62, 0.215, 0.34, 0.05, 0.34, PAL.cream, Math.PI / 2, 0, 0, item, isl);
+  b.push('box', 0, 0.70, 0.245, 0.035, 0.14, 0.03, PAL.ink, 0, 0, 0, item, isl);
+  b.push('box', 0.07, 0.62, 0.245, 0.11, 0.03, 0.03, PAL.ink, 0, 0, 0, item, isl);
+};
+ARCH.stage = (b, item, isl) => {
+  b.push('rbox', 0, 0.09, 0, 1.0, 0.18, 0.78, PAL.wood, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.20, -0.34, 0.94, 0.04, 0.06, PAL.eave, 0, 0, 0, item, isl);
+  for (const [x, z] of [[-0.44, -0.34], [0.44, -0.34], [-0.44, 0.32], [0.44, 0.32]])
+    b.push('cylinder', x, 0.40, z, 0.07, 0.62, 0.07, PAL.stone, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.74, -0.01, 1.06, 0.09, 0.80, PAL.coral, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.48, -0.33, 0.88, 0.42, 0.05, PAL.pastel[0], 0, 0, 0, item, isl);
+  b.push('glowsphere', -0.30, 0.62, 0.20, 0.11, 0.11, 0.11, PAL.yellow, 0, 0, 0, item, isl);
+  b.push('glowsphere', 0.30, 0.62, 0.20, 0.11, 0.11, 0.11, PAL.yellow, 0, 0, 0, item, isl);
+};
+ARCH.busstop = (b, item, isl) => {
+  b.push('rbox', -0.32, 0.26, 0, 0.42, 0.52, 0.34, PAL.glass, 0, 0, 0, item, isl);
+  b.push('rbox', -0.32, 0.55, 0, 0.50, 0.06, 0.42, PAL.teal, 0, 0, 0, item, isl);
+  b.push('cylinder', -0.50, 0.26, 0.16, 0.05, 0.52, 0.05, PAL.stone, 0, 0, 0, item, isl);
+  b.push('cylinder', -0.14, 0.26, 0.16, 0.05, 0.52, 0.05, PAL.stone, 0, 0, 0, item, isl);
+  b.push('box', -0.32, 0.13, 0.13, 0.34, 0.05, 0.12, PAL.wood, 0, 0, 0, item, isl);
+  b.push('glowbox', -0.32, 0.26, 0.18, 0.34, 0.30, 0.03, PAL.glass, 0, 0, 0, item, isl);
+  b.push('rbox', 0.34, 0.26, 0.02, 0.72, 0.34, 0.30, PAL.coral, 0, 0, 0, item, isl);  // 公車
+  b.push('rbox', 0.34, 0.32, 0.02, 0.62, 0.14, 0.32, PAL.glass, 0, 0, 0, item, isl);
+  b.push('rbox', 0.34, 0.44, 0.02, 0.70, 0.06, 0.28, PAL.cream, 0, 0, 0, item, isl);
+  for (const [x, z] of [[0.10, 0.16], [0.58, 0.16], [0.10, -0.12], [0.58, -0.12]])
+    b.push('cylinder', x, 0.07, z, 0.13, 0.07, 0.13, PAL.ink, Math.PI / 2, 0, 0, item, isl);
+  b.push('box', 0.02, 0.28, 0.02, 0.10, 0.30, 0.24, PAL.cream, 0, 0, 0, item, isl);   // 站牌
+};
+ARCH.bike = (b, item, isl) => {
+  for (const x of [-0.26, 0.26]) b.push('torus', x, 0.20, 0, 0.30, 0.30, 0.30, PAL.ink, 0, Math.PI / 2, 0, item, isl);
+  b.push('box', 0, 0.22, 0, 0.56, 0.045, 0.045, PAL.coral, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.30, 0, 0.05, 0.20, 0.05, PAL.coral, 0, 0, 0, item, isl);
+  b.push('box', 0.16, 0.36, 0, 0.20, 0.04, 0.04, PAL.ink, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.44, 0, 0.16, 0.07, 0.09, PAL.ink, 0, 0, 0, item, isl);
+  for (const [x, z, c] of [[-0.36, 0.10, PAL.pastel[1]], [0.40, 0.12, PAL.pastel[2]], [-0.30, -0.12, PAL.yellow]]) {
+    b.push('torus', x, 0.16, z, 0.26, 0.26, 0.26, c, 0, Math.PI / 2, 0, item, isl);
+    b.push('box', x, 0.20, z, 0.30, 0.035, 0.035, PAL.ink, 0, 0, 0, item, isl);
+  }
+  b.push('box', 0, 0.03, 0, 0.94, 0.05, 0.06, PAL.stone, 0, 0, 0, item, isl);
+};
+ARCH.pavilion = (b, item, isl) => {
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * TAU;
+    b.push('cylinder', Math.sin(a) * 0.40, 0.30, Math.cos(a) * 0.40, 0.055, 0.60, 0.055, PAL.wood, 0, 0, 0, item, isl);
+  }
+  b.push('cone', 0, 0.74, 0, 0.95, 0.34, 0.95, PAL.eave, 0, 0, 0, item, isl);
+  b.push('sphere', 0, 0.94, 0, 0.13, 0.13, 0.13, PAL.yellow, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.14, 0.28, 0.52, 0.05, 0.14, PAL.wood, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.20, 0, 0.40, 0.06, 0.40, PAL.stone, 0, 0, 0, item, isl);
+};
+ARCH.classroom = (b, item, isl) => {
+  b.push('rbox', 0, 0.05, 0, 1.02, 0.10, 0.86, PAL.stone, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.34, -0.40, 1.00, 0.50, 0.05, PAL.cream, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.40, -0.37, 0.66, 0.34, 0.03, PAL.ink, 0, 0, 0, item, isl);    // 黑板
+  b.push('box', -0.48, 0.30, 0, 0.05, 0.44, 0.84, PAL.cream, 0, 0, 0, item, isl);
+  b.push('box', 0.48, 0.30, 0, 0.05, 0.44, 0.84, PAL.cream, 0, 0, 0, item, isl);
+  for (const [x, z] of [[-0.22, 0.10], [0.22, 0.10], [-0.22, -0.18], [0.22, -0.18]]) {
+    b.push('rbox', x, 0.16, z, 0.26, 0.04, 0.18, PAL.wood, 0, 0, 0, item, isl);
+    b.push('box', x, 0.10, z + 0.14, 0.10, 0.10, 0.10, PAL.ink, 0, 0, 0, item, isl);
+    b.push('cylinder', x, 0.26, z - 0.02, 0.10, 0.16, 0.10, PAL.pastel[0], 0, 0, 0, item, isl);   // 迷你人
+    b.push('sphere', x, 0.37, z - 0.02, 0.13, 0.13, 0.13, PAL.wall, 0, 0, 0, item, isl);
+  }
+};
+ARCH.book = (b, item, isl) => {
+  b.push('rbox', 0, 0.36, 0, 1.05, 0.66, 0.28, PAL.coral, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.36, 0.02, 0.94, 0.58, 0.24, PAL.cream, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.36, 0.16, 0.80, 0.05, 0.03, PAL.stone, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.36, 0.16, 0.05, 0.44, 0.03, PAL.stone, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.02, 0, 1.16, 0.05, 0.40, PAL.wood, 0, 0, 0, item, isl);
+};
+ARCH.globe = (b, item, isl) => {
+  b.push('cylinder', 0, 0.06, 0, 0.72, 0.12, 0.72, PAL.stone, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.24, 0, 0.14, 0.30, 0.14, PAL.wood, 0, 0, 0, item, isl);
+  b.push('sphere', 0, 0.72, 0, 0.82, 0.82, 0.82, PAL.glass, 0, 0, 0, item, isl);
+  b.push('torus', 0, 0.72, 0, 0.92, 0.92, 0.92, PAL.cream, 0, 0, 0, item, isl);
+  b.push('torus', 0, 0.72, 0, 0.92, 0.92, 0.92, PAL.coral, 0, Math.PI / 2, 0, item, isl);
+  b.push('sphere', 0.24, 0.86, 0.18, 0.26, 0.26, 0.26, PAL.plant[0], 0, 0, 0, item, isl);
+};
+ARCH.clinic = (b, item, isl) => {
+  b.push('rbox', 0, 0.32, 0, 0.96, 0.64, 0.80, PAL.cream, 0, 0, 0, item, isl);
+  hipRoof(b, 1.06, 0.90, 0.26, 0.64, PAL.teal, item, isl);
+  win(b, -0.26, 0.40, 0.41, 0.22, 0.18, 0.05, item, isl);
+  win(b, 0.26, 0.40, 0.41, 0.22, 0.18, 0.05, item, isl);
+  b.push('box', 0, 0.16, 0.41, 0.20, 0.32, 0.04, PAL.teal, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.86, 0.30, 0.10, 0.30, 0.06, PAL.coral, 0, 0, 0, item, isl);   // 十字
+  b.push('box', 0, 0.86, 0.30, 0.30, 0.10, 0.06, PAL.coral, 0, 0, 0, item, isl);
+  b.push('rbox', -0.52, 0.20, -0.24, 0.28, 0.40, 0.24, PAL.glass, 0, 0, 0, item, isl);
+  b.push('cylinder', 0.46, 0.30, -0.26, 0.05, 0.60, 0.05, PAL.stone, 0, 0, 0, item, isl);
+  b.push('sphere', 0.46, 0.66, -0.26, 0.20, 0.20, 0.20, PAL.plant[2], 0, 0, 0, item, isl);
+};
+ARCH.cottage = (b, item, isl) => {
+  b.push('rbox', 0, 0.30, 0, 0.92, 0.60, 0.80, PAL.wall, 0, 0, 0, item, isl);
+  hipRoof(b, 1.04, 0.92, 0.32, 0.60, PAL.coral, item, isl);
+  b.push('box', 0, 0.615, 0.43, 1.10, 0.07, 0.13, PAL.eave, 0, 0, 0, item, isl);
+  win(b, -0.24, 0.34, 0.41, 0.22, 0.20, 0.05, item, isl);
+  win(b, 0.24, 0.34, 0.41, 0.22, 0.20, 0.05, item, isl);
+  b.push('box', 0, 0.15, 0.41, 0.18, 0.30, 0.04, PAL.wood, 0, 0, 0, item, isl);
+  b.push('box', 0.28, 0.72, -0.16, 0.10, 0.28, 0.10, PAL.stone, 0, 0, 0, item, isl);
+};
+ARCH.court = (b, item, isl) => {
+  b.push('rbox', 0, 0.04, 0, 1.02, 0.08, 0.76, PAL.teal, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.085, 0, 0.30, 0.02, 0.74, PAL.cream, 0, 0, 0, item, isl);
+  for (const z of [-0.30, 0.30]) {
+    b.push('cylinder', 0, 0.26, z, 0.05, 0.44, 0.05, PAL.stone, 0, 0, 0, item, isl);
+    b.push('box', 0, 0.40, z, 0.34, 0.05, 0.05, PAL.coral, 0, 0, 0, item, isl);
+    b.push('torus', 0, 0.36, z, 0.22, 0.22, 0.22, PAL.coral, Math.PI / 2, 0, 0, item, isl);
+  }
+  for (const [x, z] of [[-0.48, -0.36], [0.48, -0.36], [-0.48, 0.36], [0.48, 0.36]])
+    b.push('cylinder', x, 0.18, z, 0.04, 0.28, 0.04, PAL.stone, 0, 0, 0, item, isl);
+};
+ARCH.farm = (b, item, isl) => {
+  b.push('rbox', 0, 0.03, 0, 1.02, 0.06, 0.80, PAL.stone, 0, 0, 0, item, isl);
+  for (let i = 0; i < 3; i++) {
+    const z = -0.24 + i * 0.24;
+    b.push('box', 0, 0.09, z, 0.92, 0.06, 0.14, 0x8a6b4a, 0, 0, 0, item, isl);
+    for (let j = 0; j < 4; j++) {
+      const x = -0.33 + j * 0.22;
+      b.push('sphere', x, 0.16, z, 0.13, 0.13, 0.13, PAL.plant[i % 3], 0, 0, 0, item, isl);
+    }
+  }
+  for (const x of [-0.48, 0.48]) for (const z of [-0.36, 0.36]) b.push('cylinder', x, 0.14, z, 0.04, 0.28, 0.04, PAL.wood, 0, 0, 0, item, isl);
+  b.push('cylinder', 0.30, 0.28, 0.26, 0.05, 0.50, 0.05, PAL.wood, 0, 0, 0, item, isl);   // 稻草人
+  b.push('cone', 0.30, 0.56, 0.26, 0.26, 0.14, 0.26, PAL.yellow, 0, 0, 0, item, isl);
+};
+ARCH.bridge = (b, item, isl) => {
+  b.push('rbox', 0, 0.02, 0.12, 1.02, 0.05, 0.34, PAL.glass, 0, 0, 0, item, isl);   // 河道
+  for (const z of [-0.28, -0.06, 0.16, 0.38]) b.push('box', 0, 0.055, z, 1.0, 0.02, 0.10, 0x7fb9c9, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.12, -0.30, 0.96, 0.06, 0.16, PAL.wood, 0, 0, 0, item, isl);  // 小橋
+  for (const x of [-0.40, 0.40]) b.push('cylinder', x, 0.18, -0.30, 0.04, 0.14, 0.04, PAL.wood, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.22, -0.30, 0.90, 0.03, 0.03, PAL.eave, 0, 0, 0, item, isl);
+  for (const x of [-0.44, 0.44]) { b.push('cylinder', x, 0.10, 0.34, 0.05, 0.20, 0.05, PAL.wood, 0, 0, 0, item, isl); b.push('sphere', x, 0.24, 0.34, 0.16, 0.16, 0.16, PAL.plant[0], 0, 0, 0, item, isl); }
+};
+ARCH.coin = (b, item, isl) => {
+  b.push('cylinder', 0, 0.08, 0, 1.04, 0.16, 1.04, PAL.stone, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.68, 0, 0.86, 0.24, 0.86, PAL.yellow, Math.PI / 2, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.68, 0.10, 0.60, 0.10, 0.60, PAL.cream, Math.PI / 2, 0, 0, item, isl);
+  b.push('box', 0, 0.72, 0.16, 0.10, 0.36, 0.04, PAL.ink, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.80, 0.16, 0.30, 0.10, 0.04, PAL.ink, 0, 0, 0, item, isl);
+};
+ARCH.stall = (b, item, isl) => {
+  b.push('rbox', 0, 0.16, 0, 0.90, 0.30, 0.50, PAL.wood, 0, 0, 0, item, isl);
+  for (const x of [-0.42, 0.42]) for (const z of [-0.22, 0.22]) b.push('cylinder', x, 0.46, z, 0.05, 0.62, 0.05, PAL.wood, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.80, 0, 1.02, 0.06, 0.62, PAL.coral, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.76, 0, 1.00, 0.05, 0.30, PAL.cream, 0, 0, 0, item, isl);
+  for (let i = 0; i < 5; i++) b.push('sphere', -0.32 + i * 0.16, 0.36, 0.06, 0.14, 0.14, 0.14, PAL.pastel[i % 3], 0, 0, 0, item, isl);
+  b.push('cone', 0.36, 0.90, 0, 0.18, 0.16, 0.18, PAL.yellow, 0, 0, 0, item, isl);
+};
+
+/* ---------- 樹種（每島不同） ---------- */
+function treeSpecies(b, sp, x, y, z, s, item, isl) {
+  const P = (k, px, py, pz, sx, sy, sz, c) => b.push(k, x + px * s, y + py * s, z + pz * s, sx * s, sy * s, sz * s, c, 0, 0, 0, item, isl);
+  if (sp === 'pine') {
+    P('cylinder', 0, 0.16, 0, 0.13, 0.32, 0.13, 0x8a6b4a);
+    P('cone', 0, 0.44, 0, 0.72, 0.52, 0.72, PAL.plant[2]);
+    P('cone', 0, 0.68, 0, 0.54, 0.40, 0.54, PAL.plant[1]);
+  } else if (sp === 'cherry') {
+    P('cylinder', 0, 0.18, 0, 0.14, 0.36, 0.14, 0x8a6b4a);
+    P('sphere', 0, 0.48, 0, 0.66, 0.52, 0.66, 0xf2b5c6);
+    P('sphere', 0.22, 0.36, 0.12, 0.34, 0.28, 0.34, 0xf7cad6);
+  } else if (sp === 'fruit') {
+    P('cylinder', 0, 0.16, 0, 0.15, 0.32, 0.15, 0x8a6b4a);
+    P('sphere', 0, 0.46, 0, 0.70, 0.58, 0.70, PAL.plant[0]);
+    P('sphere', 0.18, 0.34, 0.16, 0.22, 0.22, 0.22, 0xdb6a41);
+    P('sphere', -0.20, 0.40, -0.10, 0.18, 0.18, 0.18, 0xfcea8b);
+  } else if (sp === 'palm') {
+    P('cylinder', 0, 0.34, 0, 0.12, 0.68, 0.12, 0xa8814f);
+    for (let i = 0; i < 5; i++) {
+      const a = i / 5 * TAU;
+      b.push('cone', x + Math.cos(a) * 0.26 * s, y + 0.70 * s, z + Math.sin(a) * 0.26 * s, 0.30 * s, 0.52 * s, 0.30 * s, PAL.plant[1], 0, a, 0, item, isl);
+    }
+    P('sphere', 0, 0.70, 0, 0.20, 0.18, 0.20, 0x8a6b4a);
+  } else { // willow
+    P('cylinder', 0, 0.22, 0, 0.14, 0.44, 0.14, 0x8a6b4a);
+    P('sphere', 0, 0.56, 0, 0.72, 0.46, 0.72, PAL.plant[1]);
+    P('cone', 0.22, 0.36, 0, 0.30, 0.42, 0.30, PAL.plant[0]);
+    P('cone', -0.22, 0.36, 0, 0.30, 0.42, 0.30, PAL.plant[0]);
+  }
+}
+
+/* ---------- islands ---------- */
+const ISL_MESH = {};        // id -> {group, labelObj, nodes}
+const GRAPH = { nodes: [], edges: [] };
+const ISL_NODES = {};       // id -> {center: nodeIdx, ring: [6 nodeIdx]}
+
+function addNode(x, y, z) { GRAPH.nodes.push(new THREE.Vector3(x, y, z)); return GRAPH.nodes.length - 1; }
+function addEdge(a, b) {
+  const d = GRAPH.nodes[a].distanceTo(GRAPH.nodes[b]);
+  GRAPH.edges.push([a, b, d]);
+}
+
+const ISL_ORDER = ['transport', 'education', 'health', 'housing', 'environment', 'economy'];
+const ISL_SPECIES = {
+  hub: 'cherry', transport: 'willow', education: 'fruit', health: 'pine',
+  housing: 'palm', environment: 'cherry', economy: 'fruit'
+};
+
+/* island platform + road ring */
+function buildIsland(I) {
+  const g = new THREE.Group();
+  const pos = ISL_POS[I.id];
+  const x = pos.x, z = pos.y;
+  const isHub = I.id === 'hub';
+  const rad = isHub ? ISL_RAD + 0.5 : ISL_RAD;
+  // 崖體
+  const cliff = new THREE.Mesh(
+    new THREE.CylinderGeometry(rad, rad * 0.88, 3.2, 6),
+    new THREE.MeshStandardMaterial({ color: isHub ? 0x9c8b7a : 0x8f8271, flatShading: true, roughness: 0.95 }));
+  cliff.position.set(x, ISL_TOP - 1.6, z);
+  cliff.rotation.y = Math.PI / 6;
+  cliff.castShadow = true; cliff.receiveShadow = true;
+  cliff.userData = { pick: 'island', id: I.id };
+  g.add(cliff);
+  // 島面
+  const top = new THREE.Mesh(
+    new THREE.CylinderGeometry(rad * 0.99, rad * 0.99, 0.34, 6),
+    new THREE.MeshStandardMaterial({ color: I.color, flatShading: true, roughness: 0.9 }));
+  top.position.set(x, ISL_TOP - 0.17, z);
+  top.rotation.y = Math.PI / 6;
+  top.receiveShadow = true;
+  top.userData = { pick: 'island', id: I.id };
+  g.add(top);
+  // 路環
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(RING_R - 0.42, RING_R + 0.42, 6, 1),
+    new THREE.MeshStandardMaterial({ color: 0xd8c9b6, roughness: 0.95 }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.rotation.z = Math.PI / 6;
+  ring.position.set(x, ISL_TOP + 0.012, z);
+  ring.receiveShadow = true;
+  g.add(ring);
+  // 中心廣場
+  const plaza = new THREE.Mesh(new THREE.CircleGeometry(1.5, 24), new THREE.MeshStandardMaterial({ color: 0xe6dac9, roughness: 0.95 }));
+  plaza.rotation.x = -Math.PI / 2; plaza.position.set(x, ISL_TOP + 0.014, z); plaza.receiveShadow = true;
+  g.add(plaza);
+
+  // 節點：中心 + 6 環節點
+  const base = isHub ? 0 : (I.ang * Math.PI / 180);
+  const center = addNode(x, ISL_TOP, z);
+  const ringNodes = [];
+  for (let i = 0; i < 6; i++) {
+    const a = base + i / 6 * TAU;
+    ringNodes.push(addNode(x + Math.sin(a) * RING_R, ISL_TOP, z + Math.cos(a) * RING_R));
+  }
+  for (let i = 0; i < 6; i++) {
+    addEdge(center, ringNodes[i]);
+    addEdge(ringNodes[i], ringNodes[(i + 1) % 6]);
+  }
+  ISL_NODES[I.id] = { center, ring: ringNodes, x, z, base };
+
+  // 外圈路燈 + 串燈 + 盆栽 + 灌木 + 花
+  const b = makeBuilder(new THREE.Vector3(x, ISL_TOP, z), 1, 0);
+  for (let i = 0; i < 6; i++) {
+    const a = base + i / 6 * TAU;
+    const lx = Math.sin(a) * (rad - 0.75), lz = Math.cos(a) * (rad - 0.75);
+    b.push('cylinder', lx, 0.42, lz, 0.09, 0.84, 0.09, PAL.ink, 0, 0, 0, null, I.id);
+    b.push('glowsphere', lx, 0.88, lz, 0.20, 0.20, 0.20, PAL.night, 0, 0, 0, null, I.id);
+    // 盆栽 + 灌木 + 花
+    const pa = a + 0.42;
+    const px = Math.sin(pa) * (rad - 0.55), pz = Math.cos(pa) * (rad - 0.55);
+    b.push('cylinder', px, 0.11, pz, 0.20, 0.22, 0.20, PAL.coral, 0, 0, 0, null, I.id);
+    b.push('sphere', px, 0.30, pz, 0.30, 0.30, 0.30, PAL.plant[1], 0, 0, 0, null, I.id);
+    const fa = a - 0.42;
+    const fx = Math.sin(fa) * (rad - 0.5), fz = Math.cos(fa) * (rad - 0.5);
+    b.push('sphere', fx, 0.09, fz, 0.22, 0.18, 0.22, PAL.plant[2], 0, 0, 0, null, I.id);
+    for (let k = 0; k < 3; k++) {
+      const fa2 = a - 0.2 + k * 0.2;
+      b.push('sphere', Math.sin(fa2) * (rad - 0.34), 0.07, Math.cos(fa2) * (rad - 0.34), 0.10, 0.10, 0.10,
+        [PAL.pastel[0], PAL.yellow, PAL.pastel[1]][k], 0, 0, 0, null, I.id);
+    }
+    // 島緣串燈
+    for (let k = 0; k < 5; k++) {
+      const ka = a + (k - 2) * 0.055;
+      b.push('glowsphere', Math.sin(ka) * (rad - 0.10), 0.20, Math.cos(ka) * (rad - 0.10), 0.09, 0.09, 0.09, PAL.night, 0, 0, 0, null, I.id);
+    }
+  }
+  // 大樹 4–6 棵
+  const sp = ISL_SPECIES[I.id];
+  const tn = 4 + Math.floor(RNG() * 3);
+  for (let i = 0; i < tn; i++) {
+    const a = base + (i / tn) * TAU + 0.3;
+    const rr = rad - 2.0 - RNG() * 1.4;
+    treeSpecies(b, sp, Math.sin(a) * rr, 0, Math.cos(a) * rr, 1.15 + RNG() * 0.35, null, I.id);
+  }
+  // 長椅
+  for (let i = 0; i < 3; i++) {
+    const a = base + (i / 3) * TAU + 0.9;
+    const rr = RING_R - 1.5;
+    const bx = Math.sin(a) * rr, bz = Math.cos(a) * rr;
+    b.push('rbox', bx, 0.10, bz, 0.62, 0.07, 0.20, PAL.wood, 0, -a, 0, null, I.id);
+    b.push('rbox', bx - Math.sin(a) * 0.08, 0.22, bz - Math.cos(a) * 0.08, 0.62, 0.20, 0.05, PAL.wood, 0, -a, 0, null, I.id);
+  }
+
+  scene.add(g);
+  ISL_MESH[I.id] = { group: g, label: null, x, z };
+  return g;
+}
+ISLANDS.forEach(buildIsland);
+
+/* ---------- bridges (graph edges between islands) ---------- */
+{
+  const b = makeBuilder(new THREE.Vector3(0, 0, 0), 1, 0);
+  const pairs = [];
+  for (let k = 0; k < 6; k++) pairs.push(['hub', ISL_ORDER[k]]);
+  for (let k = 0; k < 6; k++) pairs.push([ISL_ORDER[k], ISL_ORDER[(k + 1) % 6]]);
+  for (const [a, c] of pairs) {
+    const A = ISL_NODES[a], C = ISL_NODES[c];
+    let best = null;
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) {
+      const d = GRAPH.nodes[A.ring[i]].distanceTo(GRAPH.nodes[C.ring[j]]);
+      if (!best || d < best.d) best = { d, i, j };
+    }
+    if (!best) continue;
+    const na = A.ring[best.i], nc = C.ring[best.j];
+    const p1 = GRAPH.nodes[na], p2 = GRAPH.nodes[nc];
+    addEdge(na, nc);
+    const mid = p1.clone().add(p2).multiplyScalar(0.5);
+    const len = p1.distanceTo(p2);
+    const ang = Math.atan2(p2.x - p1.x, p2.z - p1.z);
+    // deck
+    b.push('rbox', mid.x, ISL_TOP - 0.06, mid.z, 1.5, 0.12, len, PAL.wood, 0, ang, 0, null, null);
+    // rails
+    for (const s of [-1, 1]) {
+      const off = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang)).multiplyScalar(0.66 * s);
+      b.push('rbox', mid.x + off.x, ISL_TOP + 0.10, mid.z + off.z, 0.07, 0.07, len, PAL.eave, 0, ang, 0, null, null);
+      for (let k = 0; k <= 4; k++) {
+        const t = k / 4;
+        const px = lerp(p1.x, p2.x, t) + off.x, pz = lerp(p1.z, p2.z, t) + off.z;
+        b.push('glowsphere', px, ISL_TOP + 0.16, pz, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, null, null);
+      }
+    }
+  }
+}
+
+/* ---------- 細項模型放置 ---------- */
+const ITEM_WORLD = {};        // itemId -> {pos: Vector3, isl, scale, rot}
+{
+  const islandItems = {};
+  for (const id in ITEMS) { (islandItems[ITEMS[id].isl] ||= []).push(id); }
+  for (const islId in islandItems) {
+    const ids = islandItems[islId];
+    const isl = ISL_NODES[islId];
+    const hub = islId === 'hub';
+    ids.forEach((id, k) => {
+      const it = ITEMS[id];
+      const a = isl.base + (k / ids.length) * TAU + 0.35;
+      const rr = hub ? 3.5 : 3.35;
+      const px = isl.x + Math.sin(a) * rr, pz = isl.z + Math.cos(a) * rr;
+      const giant = ['book', 'coin', 'clock', 'globe'].includes(it.model);
+      const scale = giant ? 3.1 : 2.5;
+      const rot = -a + (giant ? 0 : 0.4);
+      const b = makeBuilder(new THREE.Vector3(px, ISL_TOP, pz), scale, rot);
+      ARCH[it.model](b, id, islId);
+      ITEM_WORLD[id] = { pos: new THREE.Vector3(px, ISL_TOP, pz), isl: islId, scale, rot };
+    });
+  }
+}
+
+/* ---------- build instanced meshes ---------- */
+for (const kind in KITS) {
+  const list = kitList[kind];
+  if (!list.length) continue;
+  const mesh = new THREE.InstancedMesh(KITS[kind].geo, KITS[kind].glow ? MAT.glow : MAT.solid, list.length);
+  mesh.castShadow = !KITS[kind].glow;
+  mesh.receiveShadow = !KITS[kind].glow;
+  mesh.userData = { kind };
+  const c = new THREE.Color();
+  list.forEach((rec, i) => {
+    mesh.setMatrixAt(i, rec.m);
+    mesh.setColorAt(i, rec.color);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  kitMeshes[kind] = mesh;
+  scene.add(mesh);
+}
+
+/* ---------- 路燈光池（加法混合） ---------- */
+const lampPools = [];
+{
+  const poolMat = new THREE.MeshBasicMaterial({ color: 0xffc777, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  const poolGeo = new THREE.CircleGeometry(1.15, 20);
+  const mesh = new THREE.InstancedMesh(poolGeo, poolMat, 60);
+  const m = new THREE.Matrix4();
+  let i = 0;
+  for (const I of ISLANDS) {
+    const isl = ISL_NODES[I.id];
+    const base = isl.base, rad = I.id === 'hub' ? ISL_RAD + 0.5 : ISL_RAD;
+    for (let k = 0; k < 6 && i < 60; k++) {
+      const a = base + k / 6 * TAU;
+      m.makeRotationX(-Math.PI / 2);
+      m.setPosition(isl.x + Math.sin(a) * (rad - 0.75), ISL_TOP + 0.02, isl.z + Math.cos(a) * (rad - 0.75));
+      mesh.setMatrixAt(i++, m);
+      lampPools.push({ isl: I.id });
+    }
+  }
+  mesh.count = i;
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.renderOrder = 2;
+  scene.add(mesh);
+  window.__setLampPool = (night) => { poolMat.opacity = night * 0.42; };
+}
+
+/* ============ 05 · walkers, flows, badges ============ */
+const WALK_SCALE = 2.45;                 // 小人本地高度 0.35 → 世界高度 ≈ 0.86
+const WALK_H = 0.35;
+const FLOW_R = 0.035 * WALK_SCALE;
+
+/* ---------- Dijkstra over road graph ---------- */
+function shortestPath(a, b) {
+  const N = GRAPH.nodes.length;
+  const dist = new Array(N).fill(Infinity), prev = new Array(N).fill(-1), done = new Array(N).fill(false);
+  dist[a] = 0;
+  for (let it = 0; it < N; it++) {
+    let u = -1;
+    for (let i = 0; i < N; i++) if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0 || dist[u] === Infinity) break;
+    if (u === b) break;
+    done[u] = true;
+    for (const [x, y, w] of GRAPH.edges) {
+      let v = -1;
+      if (x === u) v = y; else if (y === u) v = x;
+      if (v < 0) continue;
+      if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+    }
+  }
+  const path = [];
+  let cur = b;
+  while (cur >= 0) { path.unshift(cur); if (cur === a) break; cur = prev[cur]; }
+  return path[0] === a ? path : [a, b];
+}
+
+/* ---------- flow paths ---------- */
+const FLOW_OBJ = {};
+for (const f of FLOWS) {
+  const A = ISL_NODES[f.from], C = ISL_NODES[f.to];
+  const nodePath = shortestPath(A.center, C.center);
+  const pts = nodePath.map(i => GRAPH.nodes[i].clone());
+  // 累積長度
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+  const total = cum[cum.length - 1] || 1;
+  FLOW_OBJ[f.id] = { def: f, pts, cum, total, tube: null, walkers: [] };
+}
+
+/* ---------- flow tube shader ---------- */
+const flowMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, side: THREE.DoubleSide,
+  uniforms: { uTime: { value: 0 }, uLen: { value: 1 }, uStyle: { value: 0 }, uColor: { value: new THREE.Color(PAL.coral) }, uOpacity: { value: 0.82 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
+  fragmentShader: `
+    uniform float uTime, uLen, uStyle, uOpacity; uniform vec3 uColor; varying vec2 vUv;
+    void main(){
+      float u = vUv.x * uLen * 5.0 - uTime * 1.4;
+      float f = fract(u);
+      if(uStyle > 0.5 && uStyle < 1.5){ if(f > 0.6) discard; }
+      else if(uStyle >= 1.5){ if(f > 0.3) discard; }
+      gl_FragColor = vec4(uColor, uOpacity);
+    }`
+});
+for (const f of FLOWS) {
+  const o = FLOW_OBJ[f.id];
+  const curve = new THREE.CatmullRomCurve3(o.pts, false, 'catmullrom', 0.08);
+  const geo = new THREE.TubeGeometry(curve, Math.max(24, o.pts.length * 12), FLOW_R, 6, false);
+  const mat = flowMat.clone();
+  mat.uniforms.uLen.value = o.total;
+  mat.uniforms.uStyle.value = f.kind === 'official' ? 0 : (f.kind === 'thematic' ? 1 : 2);
+  const tube = new THREE.Mesh(geo, mat);
+  tube.visible = false;
+  tube.userData = { pick: 'flow', id: f.id };
+  tube.renderOrder = 3;
+  scene.add(tube);
+  o.tube = tube;
+  o.curve = curve;
+}
+
+/* ---------- walker parts (instanced, dynamic) ---------- */
+const walkerGeo = {
+  leg: new THREE.BoxGeometry(0.035, 0.16, 0.035),
+  arm: new THREE.BoxGeometry(0.028, 0.13, 0.028),
+  body: new THREE.CapsuleGeometry(0.055, 0.10, 4, 10),
+  head: new THREE.SphereGeometry(0.07, 14, 12),
+  hair: new THREE.SphereGeometry(0.072, 14, 8, 0, TAU, 0, Math.PI / 2),
+  eye: new THREE.SphereGeometry(0.012, 6, 6),
+  shadow: new THREE.CircleGeometry(0.085, 12)
+};
+const walkerMat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0, flatShading: false });
+const shadowMat = new THREE.MeshBasicMaterial({ color: 0x211d1d, transparent: true, opacity: 0.22, depthWrite: false });
+
+/* accessory merged geometries */
+function merged(parts) {
+  const gs = parts.map(p => {
+    let g = p.geo;
+    if (p.x || p.y || p.z) g = g.clone();
+    if (g.index) g = g.toNonIndexed();
+    g.translate(p.x || 0, p.y || 0, p.z || 0);
+    return g;
+  });
+  return mergeGeometries(gs, false);
+}
+const accGeo = {
+  vest: merged([{ geo: new THREE.BoxGeometry(0.135, 0.115, 0.105) }]),
+  badge: merged([{ geo: new THREE.BoxGeometry(0.03, 0.04, 0.012), z: 0.058, y: 0.01 }]),
+  coat: merged([{ geo: new THREE.CapsuleGeometry(0.062, 0.11, 4, 10) }]),
+  cane: merged([{ geo: new THREE.CylinderGeometry(0.010, 0.010, 0.22) }]),
+  hat: merged([{ geo: new THREE.ConeGeometry(0.055, 0.05, 10) }]),
+  helmet: merged([{ geo: new THREE.SphereGeometry(0.076, 12, 8, 0, TAU, 0, Math.PI / 2) }]),
+  straw: merged([{ geo: new THREE.ConeGeometry(0.11, 0.05, 12) }]),
+  stroller: merged([
+    { geo: new THREE.BoxGeometry(0.16, 0.09, 0.12) },
+    { geo: new THREE.TorusGeometry(0.035, 0.010, 6, 10), x: -0.06, y: -0.07 },
+    { geo: new THREE.TorusGeometry(0.035, 0.010, 6, 10), x: 0.06, y: -0.07 }
+  ]),
+  bike: merged([
+    { geo: new THREE.TorusGeometry(0.055, 0.010, 6, 12), x: -0.075, y: -0.075 },
+    { geo: new THREE.TorusGeometry(0.055, 0.010, 6, 12), x: 0.075, y: -0.075 },
+    { geo: new THREE.BoxGeometry(0.13, 0.014, 0.014), y: -0.06 }
+  ]),
+  case: merged([{ geo: new THREE.BoxGeometry(0.075, 0.09, 0.035) }])
+};
+const ACC_ORDER = ['vest', 'badge', 'coat', 'cane', 'hat', 'helmet', 'straw', 'stroller', 'bike', 'case'];
+
+/* ---------- roles ---------- */
+const ROLES = {
+  civil: { body: 0x6f7fb5, hair: 0x3a3330, acc: ['vest', 'badge'] },
+  resident: { body: 0xdb6a41, hair: 0x2b2320, acc: [] },
+  elder: { body: 0xc5b5a7, hair: 0xcfcfcf, acc: ['cane'] },
+  student: { body: 0xfcea8b, hair: 0x2b2320, acc: ['hat'] },
+  parent: { body: 0xf2b5c6, hair: 0x2b2320, acc: ['stroller'] },
+  commuter: { body: 0x3e7c8c, hair: 0x2b2320, acc: ['bike'] },
+  farmer: { body: 0x71806a, hair: 0x2b2320, acc: ['straw'] },
+  worker: { body: 0xfcea8b, hair: 0x2b2320, acc: ['helmet'] },
+  researcher: { body: 0xfff8f4, hair: 0x3a3330, acc: ['coat'] },
+  traveller: { body: 0x58a6a6, hair: 0x3a3330, acc: ['case'] }
+};
+const ROLE_KEYS = Object.keys(ROLES);
+
+/* ---------- build walker list ---------- */
+const WALKERS = [];
+const FLOW_WALK_COUNT = { official: 12, thematic: 7, pending: 4 };
+for (const f of FLOWS) {
+  const o = FLOW_OBJ[f.id];
+  const n = FLOW_WALK_COUNT[f.kind] || 6;
+  for (let i = 0; i < n; i++) {
+    const role = f.kind === 'official'
+      ? ['civil', 'resident', 'elder', 'commuter', 'worker'][i % 5]
+      : (f.kind === 'thematic' ? ['researcher', 'student', 'parent', 'resident'][i % 4] : ['civil', 'traveller', 'resident'][i % 3]);
+    WALKERS.push({
+      id: 'w' + WALKERS.length, flow: f.id, role,
+      t: (i / n) + RNG() * 0.04, dir: i % 2 ? 1 : -1,
+      speed: 0.32 + RNG() * 0.08, phase: RNG(), pause: 0, x: 0, z: 0, yaw: 0,
+      bike: ROLES[role].acc.includes('bike')
+    });
+  }
+}
+for (const w of WALKERS) {
+  if (w.bike) w.speed = 0.62 + RNG() * 0.08;
+}
+
+/* ---------- instanced meshes for walker parts ---------- */
+const WM = {};
+const N = WALKERS.length;
+function dynMesh(geo, mat, count) {
+  const m = new THREE.InstancedMesh(geo, mat, count);
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  m.castShadow = false; m.receiveShadow = false;
+  m.frustumCulled = false;
+  return m;
+}
+WM.legL = dynMesh(walkerGeo.leg, walkerMat, N);
+WM.legR = dynMesh(walkerGeo.leg, walkerMat, N);
+WM.armL = dynMesh(walkerGeo.arm, walkerMat, N);
+WM.armR = dynMesh(walkerGeo.arm, walkerMat, N);
+WM.body = dynMesh(walkerGeo.body, walkerMat, N);
+WM.head = dynMesh(walkerGeo.head, walkerMat, N);
+WM.hair = dynMesh(walkerGeo.hair, walkerMat, N);
+WM.eye = dynMesh(walkerGeo.eye, walkerMat, N * 2);
+WM.shadow = dynMesh(walkerGeo.shadow, shadowMat, N);
+WM.shadow.renderOrder = 1;
+for (const k of ACC_ORDER) WM['acc_' + k] = dynMesh(accGeo[k], walkerMat, N);
+for (const k in WM) {
+  if (k === 'shadow') continue;
+  WM[k].userData = { pick: 'walker' };
+  scene.add(WM[k]);
+}
+scene.add(WM.shadow);
+
+/* colours per walker part */
+const tmpC = new THREE.Color();
+WALKERS.forEach((w, i) => {
+  const R = ROLES[w.role];
+  tmpC.setHex(R.body); WM.body.setColorAt(i, tmpC);
+  tmpC.setHex(R.hair); WM.hair.setColorAt(i, tmpC);
+  tmpC.setHex(0xf0e6d8); WM.head.setColorAt(i, tmpC);
+  tmpC.setHex(0x3a3330); WM.legL.setColorAt(i, tmpC); WM.legR.setColorAt(i, tmpC);
+  tmpC.setHex(R.body); WM.armL.setColorAt(i, tmpC); WM.armR.setColorAt(i, tmpC);
+  tmpC.setHex(0x241d1a); WM.eye.setColorAt(i * 2, tmpC); WM.eye.setColorAt(i * 2 + 1, tmpC);
+  tmpC.setHex(0xffffff);
+  for (const k of ACC_ORDER) {
+    const a = R.acc.includes(k);
+    if (k === 'vest') tmpC.setHex(a ? PAL.coral : 0xffffff);
+    else if (k === 'badge') tmpC.setHex(a ? PAL.yellow : 0xffffff);
+    else if (k === 'coat') tmpC.setHex(a ? 0xffffff : 0xffffff);
+    else if (k === 'cane') tmpC.setHex(a ? 0x8a6b4a : 0xffffff);
+    else if (k === 'hat') tmpC.setHex(a ? PAL.yellow : 0xffffff);
+    else if (k === 'helmet') tmpC.setHex(a ? 0xfcea8b : 0xffffff);
+    else if (k === 'straw') tmpC.setHex(a ? 0xd9c9a3 : 0xffffff);
+    else if (k === 'stroller') tmpC.setHex(a ? PAL.teal : 0xffffff);
+    else if (k === 'bike') tmpC.setHex(a ? 0x33302e : 0xffffff);
+    else if (k === 'case') tmpC.setHex(a ? PAL.pastel[2] : 0xffffff);
+    WM['acc_' + k].setColorAt(i, tmpC);
+  }
+});
+for (const k in WM) if (WM[k].instanceColor) WM[k].instanceColor.needsUpdate = true;
+
+/* ---------- badge sprites (128² canvas) ---------- */
+const badgeCache = {};
+function badgeTexture(icon) {
+  if (badgeCache[icon]) return badgeCache[icon];
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 128, 128);
+  g.fillStyle = '#fff8f4';
+  g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.fill();
+  g.strokeStyle = '#db6a41'; g.lineWidth = 9;
+  g.beginPath(); g.arc(64, 64, 48, 0, TAU); g.stroke();
+  g.strokeStyle = '#211d1d'; g.lineWidth = 6; g.lineCap = 'round'; g.lineJoin = 'round';
+  const ICON = {
+    bus: () => { g.strokeRect(28, 34, 72, 44); g.beginPath(); g.moveTo(28, 60); g.lineTo(100, 60); g.stroke(); g.beginPath(); g.arc(44, 84, 7, 0, TAU); g.stroke(); g.beginPath(); g.arc(84, 84, 7, 0, TAU); g.stroke(); },
+    cross: () => { g.beginPath(); g.moveTo(64, 26); g.lineTo(64, 102); g.moveTo(26, 64); g.lineTo(102, 64); g.stroke(); },
+    building: () => { g.strokeRect(34, 30, 60, 68); for (let r = 0; r < 3; r++) for (let cc = 0; cc < 3; cc++) { g.strokeRect(42 + cc * 15, 40 + r * 16, 8, 8); } },
+    home: () => { g.beginPath(); g.moveTo(24, 60); g.lineTo(64, 26); g.lineTo(104, 60); g.stroke(); g.strokeRect(40, 60, 48, 42); },
+    coin: () => { g.beginPath(); g.arc(64, 64, 34, 0, TAU); g.stroke(); g.beginPath(); g.moveTo(64, 46); g.lineTo(64, 82); g.moveTo(52, 56); g.lineTo(76, 56); g.moveTo(52, 72); g.lineTo(76, 72); g.stroke(); },
+    bike: () => { g.beginPath(); g.arc(38, 74, 20, 0, TAU); g.stroke(); g.beginPath(); g.arc(90, 74, 20, 0, TAU); g.stroke(); g.beginPath(); g.moveTo(38, 74); g.lineTo(60, 40); g.lineTo(90, 74); g.moveTo(60, 40); g.lineTo(80, 40); g.stroke(); },
+    book: () => { g.strokeRect(26, 34, 76, 60); g.beginPath(); g.moveTo(64, 34); g.lineTo(64, 94); g.stroke(); },
+    tree: () => { g.beginPath(); g.moveTo(64, 24); g.lineTo(38, 62); g.lineTo(90, 62); g.closePath(); g.stroke(); g.beginPath(); g.moveTo(64, 62); g.lineTo(64, 100); g.stroke(); },
+    heart: () => { g.beginPath(); g.moveTo(64, 96); g.bezierCurveTo(20, 66, 30, 32, 64, 48); g.bezierCurveTo(98, 32, 108, 66, 64, 96); g.stroke(); }
+  };
+  (ICON[icon] || ICON.box)();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  badgeCache[icon] = tex;
+  return tex;
+}
+for (const w of WALKERS) {
+  const f = FLOW_OBJ[w.flow].def;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTexture(f.icon), depthTest: true, transparent: true, opacity: 0.98 }));
+  sp.scale.set(0.42, 0.42, 1);
+  sp.visible = false;
+  sp.userData = { pick: 'walker', id: w.id };
+  scene.add(sp);
+  w.badge = sp;
+}
+
+/* ---------- walker names (CSS2D) ---------- */
+for (const w of WALKERS) {
+  const f = FLOW_OBJ[w.flow].def;
+  const el = document.createElement('div');
+  el.className = 'wname';
+  el.textContent = (LANG === 'en' ? 'Carrying ' : '正在搬 ') + tr(f.carry);
+  el.style.display = 'none';
+  const obj = new CSS2DObject(el);
+  obj.visible = false;
+  scene.add(obj);
+  w.nameObj = obj;
+}
+
+/* ---------- walker update ---------- */
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _e = new THREE.Euler();
+function place(mesh, idx, x, y, z, yaw, rx, ry, rz, sx, sy, sz) {
+  _e.set(rx || 0, ry !== undefined ? ry : yaw, rz || 0, 'YXZ');
+  _q.setFromEuler(_e);
+  _p.set(x, y, z);
+  _s.set(sx, sy, sz);
+  _m4.compose(_p, _q, _s);
+  mesh.setMatrixAt(idx, _m4);
+}
+function samplePath(o, t) {
+  const d = clamp(t, 0, 1) * o.total;
+  let i = 1;
+  while (i < o.cum.length - 1 && o.cum[i] < d) i++;
+  const a = o.pts[i - 1], b = o.pts[i];
+  const seg = o.cum[i] - o.cum[i - 1] || 1;
+  const k = clamp((d - o.cum[i - 1]) / seg, 0, 1);
+  const x = lerp(a.x, b.x, k), z = lerp(a.z, b.z, k);
+  const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+  return { x, z, yaw };
+}
+const LOG_EVENTS = [];
+function logEvent(type, flowId, w) {
+  const f = FLOW_OBJ[flowId].def;
+  LOG_EVENTS.unshift({ type, flowId, t: Clock.label, icon: f.icon, txt: tr(f.carry), from: ISL_BY_ID[f.from], to: ISL_BY_ID[f.to] });
+  if (LOG_EVENTS.length > 60) LOG_EVENTS.pop();
+  renderLog();
+}
+function updateWalkers(dt, time) {
+  const camPos = camera.position;
+  for (let i = 0; i < WALKERS.length; i++) {
+    const w = WALKERS[i];
+    const o = FLOW_OBJ[w.flow];
+    if (w.pause > 0) {
+      w.pause -= dt;
+      if (w.pause <= 0) { w.dir *= -1; logEvent('depart', w.flow, w); }
+    } else {
+      const prev = w.t;
+      w.t += (w.dir * w.speed * dt) / o.total;
+      if (w.t > 1) { w.t = 1; w.pause = 1.4; logEvent('arrive', w.flow, w); logEvent('handoff', w.flow, w); }
+      else if (w.t < 0) { w.t = 0; w.pause = 1.4; logEvent('arrive', w.flow, w); logEvent('handoff', w.flow, w); }
+    }
+    const sp = samplePath(o, w.t);
+    w.x = sp.x; w.z = sp.z; w.yaw = sp.yaw;
+    const ph = time * 9 + w.phase * 20;
+    const moving = w.pause <= 0;
+    const swing = moving ? Math.sin(ph) : 0;
+    const bob = moving ? Math.abs(Math.sin(ph)) * 0.012 : 0;
+    const S = WALK_SCALE;
+    const dcam = Math.hypot(camPos.x - sp.x, camPos.z - sp.z);
+    const ds = clamp(dcam / 20, 1, 1.45);
+    const s = S * ds;
+    const base = ISL_TOP + 0.02;
+
+    place(WM.legL, i, sp.x + Math.cos(sp.yaw) * 0.022 * s, base + (0.075 + bob) * s, sp.z - Math.sin(sp.yaw) * 0.022 * s, sp.yaw, swing * 0.55 * s, 0, 0, s, s, s);
+    place(WM.legR, i, sp.x - Math.cos(sp.yaw) * 0.022 * s, base + (0.075 + bob) * s, sp.z + Math.sin(sp.yaw) * 0.022 * s, sp.yaw, -swing * 0.55 * s, 0, 0, s, s, s);
+    place(WM.armL, i, sp.x + Math.cos(sp.yaw) * 0.062 * s, base + (0.225 + bob) * s, sp.z - Math.sin(sp.yaw) * 0.062 * s, sp.yaw, -swing * 0.45 * s, 0, 0, s, s, s);
+    place(WM.armR, i, sp.x - Math.cos(sp.yaw) * 0.062 * s, base + (0.225 + bob) * s, sp.z + Math.sin(sp.yaw) * 0.062 * s, sp.yaw, swing * 0.45 * s, 0, 0, s, s, s);
+    place(WM.body, i, sp.x, base + (0.205 + bob) * s, sp.z, sp.yaw, 0, 0, 0, s, s, s);
+    place(WM.head, i, sp.x, base + (0.288 + bob) * s, sp.z, sp.yaw, 0, 0, 0, s, s, s);
+    place(WM.hair, i, sp.x, base + (0.292 + bob) * s, sp.z, sp.yaw, 0, 0, 0, s, s, s);
+    const fx = Math.sin(sp.yaw) * 0.058 * s, fz = Math.cos(sp.yaw) * 0.058 * s;
+    const rx = Math.cos(sp.yaw) * 0.026 * s, rz = -Math.sin(sp.yaw) * 0.026 * s;
+    place(WM.eye, i * 2, sp.x + rx + fx, base + (0.292 + bob) * s, sp.z + rz + fz, sp.yaw, 0, 0, 0, s, s, s);
+    place(WM.eye, i * 2 + 1, sp.x - rx + fx, base + (0.292 + bob) * s, sp.z - rz + fz, sp.yaw, 0, 0, 0, s, s, s);
+    place(WM.shadow, i, sp.x, base + 0.005, sp.z, 0, -Math.PI / 2, 0, 0, s * (1 - bob * 2), s * (1 - bob * 2), s * (1 - bob * 2));
+
+    // accessories
+    const R = ROLES[w.role];
+    for (const k of ACC_ORDER) {
+      const on = R.acc.includes(k);
+      if (!on) { place(WM['acc_' + k], i, 0, -999, 0, 0, 0, 0, 0, 0.0001, 0.0001, 0.0001); continue; }
+      let ax = 0, ay = 0, az = 0, ax2 = 0, ay2 = 0, az2 = 0, arx = 0, arz = 0;
+      if (k === 'vest' || k === 'coat') { ay = 0.215; az = 0; }
+      else if (k === 'badge') { ay = 0.225; az = 0.056; }
+      else if (k === 'cane') { ax = 0.085; ay = 0.12; az = 0.01; arz = 0.12; }
+      else if (k === 'hat') { ay = 0.335; }
+      else if (k === 'helmet') { ay = 0.292; }
+      else if (k === 'straw') { ay = 0.34; }
+      else if (k === 'stroller') { ax = 0.14; ay = 0.10; }
+      else if (k === 'bike') { ax = 0.0; ay = 0.075; }
+      else if (k === 'case') { ax = -0.10; ay = 0.075; }
+      const wx = sp.x + (Math.cos(sp.yaw) * ax + Math.sin(sp.yaw) * az) * s;
+      const wz = sp.z + (-Math.sin(sp.yaw) * ax + Math.cos(sp.yaw) * az) * s;
+      place(WM['acc_' + k], i, wx, base + ay * s, wz, sp.yaw, arx, 0, arz, s, s, s);
+    }
+    // badge + name
+    const showBadge = (typeof TOGGLES !== 'undefined' && TOGGLES.carry) && dcam < 16;
+    w.badge.visible = showBadge;
+    if (showBadge) {
+      w.badge.position.set(sp.x, base + (0.42 + bob) * s, sp.z);
+      w.badge.scale.set(0.42 * ds, 0.42 * ds, 1);
+    }
+    const showName = (typeof TOGGLES !== 'undefined' && TOGGLES.names) && dcam < 14;
+    w.nameObj.visible = showName;
+    if (showName) w.nameObj.position.set(sp.x, base + (0.46 + bob) * s, sp.z);
+  }
+  for (const k in WM) WM[k].instanceMatrix.needsUpdate = true;
+}
+
+/* ============ 06 · labels, selection, highlight, camera flight ============ */
+const TOGGLES = { names: false, carry: true, flows: false, pause: false, top: false, log: true };
+const SEL = { kind: null, id: null };
+
+/* ---------- island labels ---------- */
+for (const I of ISLANDS) {
+  const isl = ISL_NODES[I.id];
+  const el = document.createElement('div');
+  el.className = 'ilabel';
+  el.textContent = I.no + ' ' + tr(I.name);
+  const obj = new CSS2DObject(el);
+  const front = isl.base + Math.PI;   // 前側崖邊
+  obj.position.set(isl.x + Math.sin(front) * (ISL_RAD + 0.9), ISL_TOP - 0.75, isl.z + Math.cos(front) * (ISL_RAD + 0.9));
+  scene.add(obj);
+  ISL_MESH[I.id].label = { obj, el };
+}
+
+/* ---------- item pins (①②③) ---------- */
+const pinGroup = new THREE.Group();
+scene.add(pinGroup);
+const pinLines = [];
+function clearPins() {
+  while (pinGroup.children.length) {
+    const c = pinGroup.children.pop();
+    if (c.geometry) c.geometry.dispose();
+  }
+  pinLines.length = 0;
+}
+function buildPins(islandId) {
+  clearPins();
+  const ids = Object.keys(ITEMS).filter(id => ITEMS[id].isl === islandId);
+  ids.forEach((id, idx) => {
+    const it = ITEMS[id], w = ITEM_WORLD[id];
+    const el = document.createElement('div');
+    el.className = 'pinlab';
+    el.textContent = ['①', '②', '③', '④', '⑤', '⑥'][idx] || String(idx + 1);
+    const obj = new CSS2DObject(el);
+    const top = new THREE.Vector3(w.pos.x, ISL_TOP + 1.55 * (w.scale / 2.5) + 0.35, w.pos.z);
+    obj.position.copy(top).add(new THREE.Vector3(0, 0.25, 0));
+    pinGroup.add(obj);
+    // coral 細線 depthTest false
+    const g = new THREE.BufferGeometry().setFromPoints([top, top.clone().add(new THREE.Vector3(0, 0.25, 0))]);
+    const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: PAL.coral, depthTest: false, transparent: true, opacity: 0.95 }));
+    line.renderOrder = 999;
+    pinGroup.add(line);
+    pinLines.push(line);
+  });
+}
+
+/* ---------- highlight (tint via setColorAt) ---------- */
+const TINT_CORAL = new THREE.Color(PAL.coral), TINT_YELLOW = new THREE.Color(PAL.yellow);
+const mixC = new THREE.Color();
+function itemActiveNow(id) {
+  const it = ITEMS[id];
+  const m = Clock.minutes;
+  return m >= it.active[0] && m <= it.active[1];
+}
+function refreshHighlight() {
+  // 重設所有顏色，再套用 highlight / dayCycle
+  for (const kind in kitMeshes) {
+    const mesh = kitMeshes[kind];
+    const list = kitList[kind];
+    for (let i = 0; i < list.length; i++) {
+      const rec = list[i];
+      let c = rec.base;
+      if (rec.item) {
+        const isSel = SEL.kind === 'item' && SEL.id === rec.item;
+        const islSel = SEL.kind === 'island' && ISL_BY_ID[ITEMS[rec.item].isl].id === SEL.id;
+        if (isSel) c = mixC.copy(rec.base).lerp(TINT_CORAL, 0.22).clone();
+        else if (islSel) c = mixC.copy(rec.base).lerp(TINT_CORAL, 0.10).clone();
+        else if (itemActiveNow(rec.item)) c = mixC.copy(rec.base).lerp(TINT_YELLOW, 0.22).clone();
+      }
+      mesh.setColorAt(i, c);
+    }
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }
+}
+
+/* ---------- flow visibility ---------- */
+function relatedFlows() {
+  if (!SEL.kind) return [];
+  if (SEL.kind === 'flow') return [SEL.id];
+  if (SEL.kind === 'island') return FLOWS.filter(f => f.from === SEL.id || f.to === SEL.id).map(f => f.id);
+  if (SEL.kind === 'item') {
+    const isl = ITEMS[SEL.id].isl;
+    return FLOWS.filter(f => f.from === isl || f.to === isl).map(f => f.id);
+  }
+  if (SEL.kind === 'walker') return [WALKERS.find(w => w.id === SEL.id)?.flow].filter(Boolean);
+  return [];
+}
+function refreshFlowVisibility() {
+  const rel = new Set(relatedFlows());
+  let any = false;
+  for (const f of FLOWS) {
+    const o = FLOW_OBJ[f.id];
+    const show = TOGGLES.flows || rel.has(f.id);
+    o.tube.visible = show;
+    if (show) any = true;
+  }
+  document.getElementById('legend').hidden = !any;
+}
+
+/* ---------- camera flight ---------- */
+const flight = { active: false, t: 0, dur: 0.9, fromP: new THREE.Vector3(), toP: new THREE.Vector3(), fromT: new THREE.Vector3(), toT: new THREE.Vector3() };
+function flyTo(target, dist, height) {
+  const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+  dir.y = 0;
+  if (dir.lengthSq() < 0.001) dir.set(0.4, 0, 1);
+  dir.normalize();
+  flight.fromP.copy(camera.position);
+  flight.fromT.copy(controls.target);
+  flight.toT.copy(target);
+  flight.toP.copy(target).addScaledVector(dir, dist);
+  flight.toP.y = target.y + height;
+  flight.t = 0;
+  flight.active = true;
+  if (STATE.reduced) {
+    camera.position.copy(flight.toP);
+    controls.target.copy(flight.toT);
+    flight.active = false;
+    STATE.dirty = true;
+  }
+}
+function updateFlight(dt) {
+  if (!flight.active) return;
+  flight.t = Math.min(1, flight.t + dt / flight.dur);
+  const k = flight.t < 0.5 ? 2 * flight.t * flight.t : 1 - Math.pow(-2 * flight.t + 2, 2) / 2;
+  camera.position.lerpVectors(flight.fromP, flight.toP, k);
+  controls.target.lerpVectors(flight.fromT, flight.toT, k);
+  STATE.dirty = true;
+  if (flight.t >= 1) flight.active = false;
+}
+
+/* ---------- raycast selection ---------- */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let downXY = null, downT = 0;
+renderer.domElement.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY]; downT = performance.now(); });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (!downXY) return;
+  const dx = e.clientX - downXY[0], dy = e.clientY - downXY[1];
+  const moved = Math.hypot(dx, dy);
+  downXY = null;
+  if (moved > 6 || performance.now() - downT > 700) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const targets = [];
+  for (const kind in kitMeshes) targets.push(kitMeshes[kind]);
+  for (const k in WM) targets.push(WM[k]);
+  for (const f of FLOWS) { const o = FLOW_OBJ[f.id]; if (o.tube.visible) targets.push(o.tube); }
+  scene.traverse(o => { if (o.isMesh && o.userData && o.userData.pick === 'island') targets.push(o); });
+  const hits = raycaster.intersectObjects(targets, false);
+  if (!hits.length) { select(null, null); return; }
+  const hit = hits[0];
+  const obj = hit.object;
+  if (obj.userData.pick === 'island') { select('island', obj.userData.id); return; }
+  if (obj.userData.pick === 'flow') { select('flow', obj.userData.id); return; }
+  if (obj.userData.kind) {
+    // 建物 instance → item
+    const rec = kitList[obj.userData.kind][hit.instanceId];
+    if (rec && rec.item) { select('item', rec.item); return; }
+    select(null, null);
+    return;
+  }
+  if (obj.userData.pick === 'walker') {
+    // 找 walker index
+    const idx = hit.instanceId;
+    select('walker', WALKERS[idx] ? WALKERS[idx].id : null);
+    return;
+  }
+  select(null, null);
+});
+
+/* ---------- select ---------- */
+function select(kind, id) {
+  SEL.kind = kind; SEL.id = id;
+  if (!kind) {
+    clearPins();
+    refreshHighlight();
+    refreshFlowVisibility();
+    document.getElementById('card').hidden = true;
+    updateLabels();
+    STATE.dirty = true;
+    return;
+  }
+  if (kind === 'island') {
+    buildPins(id);
+    const isl = ISL_NODES[id];
+    flyTo(new THREE.Vector3(isl.x, ISL_TOP + 1.2, isl.z), 22, 15);
+  } else if (kind === 'item') {
+    const w = ITEM_WORLD[id];
+    flyTo(new THREE.Vector3(w.pos.x, ISL_TOP + 1.0, w.pos.z), 9, 7);
+  } else if (kind === 'walker') {
+    const w = WALKERS.find(x => x.id === id);
+    if (w) flyTo(new THREE.Vector3(w.x, ISL_TOP + 0.6, w.z), 5.5, 3.4);
+  } else if (kind === 'flow') {
+    const o = FLOW_OBJ[id];
+    const mid = o.pts[Math.floor(o.pts.length / 2)];
+    flyTo(new THREE.Vector3(mid.x, ISL_TOP + 1.4, mid.z), 20, 15);
+  }
+  refreshHighlight();
+  refreshFlowVisibility();
+  openCard(kind, id);
+  updateLabels();
+  STATE.dirty = true;
+}
+
+/* ---------- label dim / collision avoidance ---------- */
+const labelBoxes = [];
+function updateLabels() {
+  for (const I of ISLANDS) {
+    const L = ISL_MESH[I.id].label;
+    const sel = SEL.kind === 'island' && SEL.id === I.id;
+    L.el.classList.toggle('sel', sel);
+    L.el.classList.toggle('dim', !!SEL.kind && !sel);
+  }
+  // 碰撞避讓
+  const panels = ['brand', 'side', 'card', 'hud', 'logPanel'].map(id => document.getElementById(id)).filter(e => e && !e.hidden && e.offsetParent !== null);
+  const panelRects = panels.map(p => p.getBoundingClientRect());
+  labelBoxes.length = 0;
+  const list = ISLANDS.map(I => ISL_MESH[I.id].label);
+  for (const L of list) {
+    const r = L.el.getBoundingClientRect();
+    if (!r.width) continue;
+    let collide = false;
+    for (const p of panelRects) if (r.left < p.right && r.right > p.left && r.top < p.bottom && r.bottom > p.top) { collide = true; break; }
+    if (!collide) for (const b of labelBoxes) if (r.left < b.right + 8 && r.right > b.left - 8 && r.top < b.bottom + 8 && r.bottom > b.top - 8) { collide = true; break; }
+    if (collide) {
+      if (!L.el.classList.contains('mini')) { L.el.classList.add('mini'); STATE.dirty = true; }
+    } else if (L.el.classList.contains('mini')) { L.el.classList.remove('mini'); STATE.dirty = true; }
+    L.el.style.visibility = L.el.classList.contains('mini') ? 'visible' : 'visible';
+    labelBoxes.push(r);
+  }
+}
+
+/* ============ 07 · UI: cards, sidebar, HUD, log, i18n, mobile ============ */
+
+/* ---------- thumbnail offscreen render (160²) ---------- */
+const thumbRT = new THREE.WebGLRenderTarget(160, 160, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+const thumbCam = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+const thumbCanvas = document.createElement('canvas');
+thumbCanvas.width = 160; thumbCanvas.height = 160;
+const thumbCtx = thumbCanvas.getContext('2d');
+const thumbBuf = new Uint8Array(160 * 160 * 4);
+function renderThumb(itemId) {
+  const w = ITEM_WORLD[itemId];
+  if (!w) return '';
+  const it = ITEMS[itemId];
+  const big = ['book', 'coin', 'clock', 'globe'].includes(it.model);
+  const dist = big ? 6.2 : 4.6;
+  thumbCam.position.set(w.pos.x + dist * 0.85, w.pos.y + dist * 0.62, w.pos.z + dist * 0.85);
+  thumbCam.lookAt(w.pos.x, w.pos.y + 0.75, w.pos.z);
+  const prevTarget = renderer.getRenderTarget();
+  renderer.setRenderTarget(thumbRT);
+  renderer.clear();
+  renderer.render(scene, thumbCam);
+  renderer.readRenderTargetPixels(thumbRT, 0, 0, 160, 160, thumbBuf);
+  renderer.setRenderTarget(prevTarget);
+  // flip Y
+  const img = thumbCtx.createImageData(160, 160);
+  for (let y = 0; y < 160; y++) {
+    const src = (159 - y) * 160 * 4, dst = y * 160 * 4;
+    img.data.set(thumbBuf.subarray(src, src + 640), dst);
+  }
+  thumbCtx.putImageData(img, 0, 0);
+  return thumbCanvas.toDataURL('image/png');
+}
+
+/* ---------- cards ---------- */
+const cardBody = document.getElementById('cardBody');
+function factTiles(item) {
+  return `<div class="facts">${item.facts.map(f => `
+    <div class="fact">
+      <div class="bignum">${f.v}<span style="font-size:15px">${tr(f.u)}</span></div>
+      <div class="k">${tr(f.k)}</div>
+    </div>`).join('')}</div>`;
+}
+function timelineHTML(item) {
+  return `<div class="tl">${item.timeline.map(t => `<div><div class="d">${t.d}</div><div class="t">${tr(t.t)}</div></div>`).join('')}</div>`;
+}
+function openCard(kind, id) {
+  const card = document.getElementById('card');
+  card.hidden = false;
+  if (kind === 'island') {
+    const I = ISL_BY_ID[id];
+    const ids = Object.keys(ITEMS).filter(k => ITEMS[k].isl === id);
+    const fs = FLOWS.filter(f => f.from === id || f.to === id);
+    cardBody.innerHTML = `
+      <div class="cardicon">${I.icon}</div>
+      <div class="eyebrow">${I.no} · ${LANG === 'en' ? 'ISLAND' : '政策島'}</div>
+      <div class="cardtitle">${tr(I.name)}</div>
+      <div class="cardsum">${tr(I.summary)}</div>
+      <div class="eyebrow" style="margin-top:8px">${LANG === 'en' ? 'INITIATIVES' : '細項'}</div>
+      ${ids.map(k => `<div class="itemli" data-item="${k}"><span class="pin1">${['①', '②', '③', '④', '⑤', '⑥'][ITEMS[k].no - 1]}</span><span>${tr(ITEMS[k].name)}</span></div>`).join('')}
+      <div class="eyebrow" style="margin-top:12px">${LANG === 'en' ? 'COLLABORATIONS' : '協作關係'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+        ${fs.map(f => `<span class="chip" data-flow="${f.id}">${f.kind === 'official' ? '●' : f.kind === 'thematic' ? '╌' : '⋯'} ${tr(f.carry)}</span>`).join('')}
+      </div>`;
+  } else if (kind === 'item') {
+    const it = ITEMS[id];
+    const I = ISL_BY_ID[it.isl];
+    const w = ITEM_WORLD[id];
+    const thumb = renderThumb(id);
+    cardBody.innerHTML = `
+      <div class="eyebrow">${I.no} · ${tr(I.name)}</div>
+      <div class="cardtitle">${['①', '②', '③', '④', '⑤', '⑥'][it.no - 1]} ${tr(it.name)}</div>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-top:8px">
+        <img src="${thumb}" width="120" height="120" style="border-radius:14px;box-shadow:0 6px 18px #4a2a1422;border:1px solid #eee0cf;background:#eef3f2" alt="">
+        <div style="flex:1">${factTiles(it)}</div>
+      </div>
+      <div class="eyebrow" style="margin-top:10px">${LANG === 'en' ? 'TIMELINE' : '時程'}</div>
+      ${timelineHTML(it)}`;
+  } else if (kind === 'flow') {
+    const f = FLOW_OBJ[id].def;
+    const o = FLOW_OBJ[id];
+    cardBody.innerHTML = `
+      <div class="eyebrow">${LANG === 'en' ? 'COLLABORATION' : '協作線'} · ${f.kind === 'official' ? (LANG === 'en' ? 'OFFICIAL' : '官方正式') : f.kind === 'thematic' ? (LANG === 'en' ? 'THEMATIC' : '主題協作') : (LANG === 'en' ? 'PENDING' : '規劃中')}</div>
+      <div class="cardtitle">${ISL_BY_ID[f.from].icon} ${tr(ISL_BY_ID[f.from].name)} → ${ISL_BY_ID[f.to].icon} ${tr(ISL_BY_ID[f.to].name)}</div>
+      <div class="cardsum">${tr(f.note)}</div>
+      ${factTiles({
+        facts: [
+          { v: f.ev, u: { zh: '級', en: '' }, k: { zh: '證據等級', en: 'evidence grade' } },
+          { v: o.walkers.length || FLOW_WALK_COUNT[f.kind], u: { zh: '人', en: '' }, k: { zh: '沿線人數', en: 'carriers' } },
+          { v: o.total.toFixed(0), u: { zh: 'm', en: 'm' }, k: { zh: '路網距離', en: 'route length' } }
+        ]
+      })}
+      <div class="eyebrow" style="margin-top:10px">${LANG === 'en' ? 'CARRYING' : '搬運物'}</div>
+      <div style="margin-top:6px"><span class="chip">${tr(f.carry)}</span></div>`;
+  } else if (kind === 'walker') {
+    const w = WALKERS.find(x => x.id === id);
+    const f = FLOW_OBJ[w.flow].def;
+    const R = ROLES[w.role];
+    const roleName = { civil: '公務員', resident: '居民', elder: '長者', student: '學童', parent: '家長', commuter: '通勤族', farmer: '農夫', worker: '工人', researcher: '研究員', traveller: '旅客' };
+    cardBody.innerHTML = `
+      <div class="eyebrow">${LANG === 'en' ? 'CARRIER' : '搬運者'}</div>
+      <div class="cardtitle">${LANG === 'en' ? (w.role) : roleName[w.role]}</div>
+      <div class="cardsum">${tr(f.carry)} · ${ISL_BY_ID[f.from].icon} ${tr(ISL_BY_ID[f.from].name)} → ${ISL_BY_ID[f.to].icon} ${tr(ISL_BY_ID[f.to].name)}</div>
+      ${factTiles({
+        facts: [
+          { v: w.speed.toFixed(2), u: { zh: 'u/s', en: 'u/s' }, k: { zh: '移動速度', en: 'speed' } },
+          { v: (w.t * 100).toFixed(0), u: { zh: '%', en: '%' }, k: { zh: '進度', en: 'progress' } },
+          { v: w.pause > 0 ? '1.4' : '0', u: { zh: 's', en: 's' }, k: { zh: '交接等待', en: 'handoff wait' } }
+        ]
+      })}`;
+  }
+  cardBody.querySelectorAll('[data-item]').forEach(el => el.onclick = () => select('item', el.dataset.item));
+  cardBody.querySelectorAll('[data-flow]').forEach(el => el.onclick = () => select('flow', el.dataset.flow));
+  card.scrollTop = 0;
+  updateLabels();
+}
+document.getElementById('cardClose').onclick = () => select(null, null);
+
+/* ---------- sidebar ---------- */
+function renderSidebar() {
+  const tt = document.getElementById('tabThemes'), tf = document.getElementById('tabFlows');
+  tt.innerHTML = ISLANDS.map(I => {
+    const ids = Object.keys(ITEMS).filter(k => ITEMS[k].isl === I.id);
+    return `<details class="isl" data-island="${I.id}"><summary><span class="no">${I.no}</span>${I.icon} ${tr(I.name)}</summary>
+      ${ids.map(k => `<div class="itrow" data-item="${k}"><span class="pin1">${['①', '②', '③', '④', '⑤', '⑥'][ITEMS[k].no - 1]}</span> ${tr(ITEMS[k].name)}</div>`).join('')}
+    </details>`;
+  }).join('');
+  tf.innerHTML = FLOWS.map(f => `<div class="flrow" data-flow="${f.id}">
+      <span class="kdot ${f.kind}"></span>
+      <span>${ISL_BY_ID[f.from].icon} ${tr(ISL_BY_ID[f.from].name)} → ${ISL_BY_ID[f.to].icon} ${tr(ISL_BY_ID[f.to].name)}</span>
+      <span style="margin-left:auto;color:#6b5c50">${tr(f.carry)}</span>
+    </div>`).join('');
+  tt.querySelectorAll('[data-item]').forEach(el => el.onclick = (e) => { e.stopPropagation(); select('item', el.dataset.item); });
+  tt.querySelectorAll('summary').forEach(el => el.onclick = () => { const id = el.parentElement.dataset.island; setTimeout(() => select('island', id), 0); });
+  tf.querySelectorAll('[data-flow]').forEach(el => el.onclick = () => select('flow', el.dataset.flow));
+  applySearch();
+}
+document.getElementById('q').addEventListener('input', applySearch);
+function applySearch() {
+  const q = (document.getElementById('q').value || '').trim().toLowerCase();
+  document.querySelectorAll('#tabThemes details.isl').forEach(d => {
+    const I = ISL_BY_ID[d.dataset.island];
+    let vis = !q;
+    if (q) {
+      const hay = (I.no + ' ' + I.name.zh + ' ' + I.name.en + ' ' + I.id).toLowerCase();
+      vis = hay.includes(q);
+      d.querySelectorAll('.itrow').forEach(r => {
+        const it = ITEMS[r.dataset.item];
+        const h2 = (it.name.zh + ' ' + it.name.en).toLowerCase();
+        const ok = h2.includes(q);
+        r.style.display = ok ? '' : 'none';
+        if (ok) vis = true;
+      });
+      if (vis) d.open = true;
+    }
+    d.style.display = vis ? '' : 'none';
+  });
+  document.querySelectorAll('#tabFlows .flrow').forEach(r => {
+    const f = FLOW_OBJ[r.dataset.flow].def;
+    const h = (f.carry.zh + ' ' + f.carry.en + ' ' + ISL_BY_ID[f.from].name.zh + ' ' + ISL_BY_ID[f.to].name.zh).toLowerCase();
+    r.style.display = (!q || h.includes(q)) ? '' : 'none';
+  });
+}
+document.getElementById('tabT').onclick = () => {
+  document.getElementById('tabT').classList.add('on'); document.getElementById('tabF').classList.remove('on');
+  document.getElementById('tabThemes').hidden = false; document.getElementById('tabFlows').hidden = true;
+};
+document.getElementById('tabF').onclick = () => {
+  document.getElementById('tabF').classList.add('on'); document.getElementById('tabT').classList.remove('on');
+  document.getElementById('tabThemes').hidden = true; document.getElementById('tabFlows').hidden = false;
+};
+
+/* ---------- log ---------- */
+const logList = document.getElementById('logList');
+const logFilter = document.getElementById('logFilter');
+logFilter.innerHTML = `<option value="">${LANG === 'en' ? 'All flows' : '全部協作線'}</option>` + FLOWS.map(f => `<option value="${f.id}">${ISL_BY_ID[f.from].name.zh}→${ISL_BY_ID[f.to].name.zh}</option>`).join('');
+logFilter.onchange = renderLog;
+function renderLog() {
+  const f = logFilter.value;
+  const rows = LOG_EVENTS.filter(e => !f || e.flowId === f).slice(0, 26);
+  logList.innerHTML = rows.map(e => `<div class="logev"><span class="lt">${e.t}</span>${e.type === 'arrive' ? (LANG === 'en' ? 'arrived' : '到站') : e.type === 'handoff' ? (LANG === 'en' ? 'handoff' : '交接') : (LANG === 'en' ? 'departed' : '出發')} · ${e.txt}</div>`).join('');
+}
+
+/* ---------- HUD ---------- */
+document.querySelectorAll('#hud .tbtn[data-min]').forEach(b => {
+  b.onclick = () => { Clock.minutes = +b.dataset.min; updateDayCycle(0); refreshHighlight(); STATE.dirty = true; };
+});
+function bindToggle(id, key, after) {
+  const b = document.getElementById(id);
+  b.onclick = () => {
+    TOGGLES[key] = !TOGGLES[key];
+    b.classList.toggle('on', TOGGLES[key]);
+    if (after) after();
+    refreshFlowVisibility();
+    STATE.dirty = true;
+  };
+}
+bindToggle('tglName', 'names');
+bindToggle('tglCarry', 'carry');
+bindToggle('tglFlow', 'flows');
+bindToggle('tglPause', 'pause', () => { Clock.paused = TOGGLES.pause; });
+bindToggle('tglTop', 'top', () => {
+  if (TOGGLES.top) flyTo(new THREE.Vector3(0, 1, 0), 0.01, 58);
+  else flyTo(new THREE.Vector3(0, 7, 0), 46, 22);
+});
+bindToggle('tglLog', 'log', () => { document.getElementById('logPanel').classList.toggle('hidden', !TOGGLES.log); });
+document.getElementById('hudTimeBtn').onclick = () => document.getElementById('hud').classList.toggle('open');
+
+document.getElementById('btnHome').onclick = () => { select(null, null); flyTo(new THREE.Vector3(0, 1, 0), 44, 26); };
+document.getElementById('btnList').onclick = () => document.getElementById('side').classList.toggle('hidden');
+document.getElementById('btnHelp').onclick = () => { document.getElementById('intro').hidden = false; };
+
+/* ---------- intro ---------- */
+const INTRO_KEY = 'policyIslandsIntroSeen';
+function showIntro(force) {
+  if (!force && localStorage.getItem(INTRO_KEY)) return;
+  document.getElementById('intro').hidden = false;
+}
+document.getElementById('introGo').onclick = () => { document.getElementById('intro').hidden = true; localStorage.setItem(INTRO_KEY, '1'); };
+
+/* ---------- keyboard ---------- */
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { select(null, null); document.getElementById('intro').hidden = true; }
+  const step = 0.09;
+  const d = new THREE.Vector3().subVectors(camera.position, controls.target);
+  const sph = new THREE.Spherical().setFromVector3(d);
+  if (e.key === 'ArrowLeft') sph.theta -= step;
+  else if (e.key === 'ArrowRight') sph.theta += step;
+  else if (e.key === 'ArrowUp') sph.phi = Math.max(0.16, sph.phi - step * 0.7);
+  else if (e.key === 'ArrowDown') sph.phi = Math.min(Math.PI * 0.487, sph.phi + step * 0.7);
+  else return;
+  e.preventDefault();
+  camera.position.setFromSpherical(sph).add(controls.target);
+  STATE.dirty = true;
+});
+
+/* ---------- i18n ---------- */
+function applyI18n() {
+  document.querySelectorAll('[data-en]').forEach(el => {
+    if (LANG === 'en') {
+      if (!el.dataset.zh) el.dataset.zh = el.innerHTML;
+      el.innerHTML = el.dataset.en;
+    } else if (el.dataset.zh) {
+      el.innerHTML = el.dataset.zh;
+    }
+  });
+  const q = document.getElementById('q');
+  q.placeholder = LANG === 'en' ? 'Search policies / items / flows...' : '搜尋政策／細項／協作…';
+  document.title = LANG === 'en' ? 'Policy Islands' : '政策島 Policy Islands';
+  for (const I of ISLANDS) {
+    const L = ISL_MESH[I.id].label;
+    if (L) L.el.textContent = I.no + ' ' + tr(I.name);
+  }
+  renderSidebar();
+}
+
+/* ---------- mobile bottom sheets ---------- */
+function makeSheet(el, handle, initialH) {
+  let dragging = false, startY = 0, startH = 0;
+  const setH = (px) => { el.style.height = Math.min(window.innerHeight * 0.92, Math.max(px, 160)) + 'px'; };
+  handle.addEventListener('pointerdown', (e) => {
+    dragging = true; startY = e.clientY; startH = el.getBoundingClientRect().height;
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    setH(startH - (e.clientY - startY));
+  });
+  handle.addEventListener('pointerup', (e) => {
+    dragging = false;
+    const h = el.getBoundingClientRect().height;
+    if (h > window.innerHeight * 0.86) setH(window.innerHeight * 0.92);
+  });
+  handle.addEventListener('click', () => {
+    const h = el.getBoundingClientRect().height;
+    if (h > window.innerHeight * 0.86) setH(initialH);
+  });
+}
+function setupSheets() {
+  const mobile = window.innerWidth <= 800;
+  const side = document.getElementById('side'), card = document.getElementById('card');
+  if (mobile) {
+    side.style.height = (window.innerHeight * 0.52) + 'px';
+    card.style.height = (window.innerHeight * 0.34) + 'px';
+  } else {
+    side.style.height = ''; card.style.height = '';
+  }
+}
+makeSheet(document.getElementById('side'), document.getElementById('sideHandle'), window.innerHeight * 0.52);
+makeSheet(document.getElementById('card'), document.getElementById('cardHandle'), window.innerHeight * 0.34);
+
+/* ============ 08 · boot, resize, loop, debug hook ============ */
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  labelRenderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  STATE.dirty = true;
+}
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(document.getElementById('app'));
+
+/* reduced motion live toggle */
+STATE.reducedQuery.addEventListener('change', (e) => {
+  STATE.reduced = e.matches;
+  if (STATE.reduced) { flight.active = false; }
+  STATE.dirty = true;
+});
+
+/* ---------- glow intensity hook ---------- */
+window.__setGlow = (gi) => { MAT.glow.emissiveIntensity = gi; };
+window.__setIslandLights = (night) => {
+  for (const p of seaProps) if (p.kind === 'lighthouse') { p.lamp.material.emissiveIntensity = 0.1 + night * 3.2; p.light.intensity = night * 12; }
+};
+
+/* ---------- init ---------- */
+if (QS.get('still') === '1') { Clock.paused = true; TOGGLES.pause = true; document.getElementById('tglPause').classList.add('on'); }
+applyI18n();
+renderSidebar();
+renderLog();
+setupSheets();
+resize();
+updateDayCycle(0);
+refreshHighlight();
+refreshFlowVisibility();
+updateLabels();
+showIntro(false);
+
+document.getElementById('load').style.display = 'none';
+
+/* ---------- main loop ---------- */
+const clock3 = new THREE.Clock();
+let animT = 0;
+let labelTick = 0;
+let fpsAcc = 0, fpsFrames = 0, degraded = false;
+function tick() {
+  requestAnimationFrame(tick);
+  const dt = Math.min(clock3.getDelta(), 0.08);
+  if (!STATE.reduced) animT += dt;
+  STATE.elapsed += dt;
+
+  // 效能守護：連續低幀率 → 降級（關陰影 + 減像素比）
+  if (!degraded && QUALITY === 'auto') {
+    fpsAcc += dt; fpsFrames++;
+    if (fpsFrames >= 90) {
+      const fps = fpsFrames / fpsAcc;
+      if (fps < 24) {
+        degraded = true;
+        renderer.shadowMap.enabled = false;
+        renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), 0.75));
+        sun.castShadow = false;
+        scene.traverse(o => { if (o.isMesh) o.material.needsUpdate = true; });
+      }
+      fpsAcc = 0; fpsFrames = 0;
+    }
+  }
+
+  if (!TOGGLES.pause) {
+    updateDayCycle(dt);
+    seaUniforms.uTime.value = animT;
+    flowMat.uniforms.uTime.value = animT;
+    for (const f of FLOWS) FLOW_OBJ[f.id].tube.material.uniforms.uTime.value = animT;
+    updateWalkers(dt, animT);
+    // clouds
+    for (const c of clouds) {
+      c.position.x += c.userData.speed * dt;
+      if (c.position.x > 130) c.position.x = -130;
+    }
+    // sea props bobbing
+    for (const p of seaProps) {
+      if (p.kind === 'boat') {
+        const u = p.obj.userData;
+        const a = animT * u.speed + u.phase;
+        p.obj.position.x = Math.cos(a) * u.radius;
+        p.obj.position.z = Math.sin(a) * u.radius * 0.6 + 22;
+        p.obj.position.y = -0.85 + Math.sin(animT * 1.3 + u.phase) * 0.09;
+        p.obj.rotation.y = -a;
+        p.obj.rotation.z = Math.sin(animT * 0.9 + u.phase) * 0.05;
+      } else if (p.kind === 'islet') {
+        p.obj.position.y = Math.sin(animT * 0.7 + p.obj.userData.bob) * 0.05;
+      }
+    }
+    // labels + pins need render
+    STATE.dirty = true;
+  }
+  updateFlight(dt);
+  controls.update();
+
+  labelTick += dt;
+  if (labelTick > 0.12) { labelTick = 0; updateLabels(); }
+
+  if (STATE.dirty) {
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+    STATE.dirty = false;
+  }
+}
+tick();
+
+/* ---------- debug hook ---------- */
+window.__pid = () => ({
+  ready: true,
+  clock: Clock.label,
+  night: +STATE.night.toFixed(3),
+  islands: ISLANDS.length,
+  items: Object.keys(ITEMS).length,
+  flows: FLOWS.length,
+  walkers: WALKERS.length,
+  kitKinds: Object.keys(kitMeshes).length,
+  instances: Object.values(kitMeshes).reduce((a, m) => a + m.count, 0),
+  drawCalls: renderer.info.render.calls,
+  triangles: renderer.info.render.triangles,
+  sel: SEL,
+  toggles: Object.assign({}, TOGGLES),
+  visibleFlows: FLOWS.filter(f => FLOW_OBJ[f.id].tube.visible).map(f => f.id),
+  walker0: WALKERS[0] ? { x: +WALKERS[0].x.toFixed(2), z: +WALKERS[0].z.toFixed(2), t: +WALKERS[0].t.toFixed(3) } : null,
+  dom: { themes: document.querySelectorAll('#tabThemes details.isl').length, flowRows: document.querySelectorAll('#tabFlows .flrow').length },
+  pins: (typeof pinGroup !== 'undefined') ? pinGroup.children.length : -1,
+  pinEls: document.querySelectorAll('.pinlab').length,
+  css2dEls: document.getElementById('css2d').children.length,
+  islandLabels: document.querySelectorAll('.ilabel').length,
+  walkerNames: document.querySelectorAll('.wname').length,
+  errors: window.__errs || [],
+  degraded: degraded,
+  quality: QUALITY,
+  fps: +(1 / Math.max(0.001, clock3.getDelta())).toFixed(1)
+});
+/* ---------- true pixel probe (headless screenshots don't composite WebGL) ---------- */
+window.__sample = (grid) => {
+  const gl = renderer.getContext();
+  renderer.render(scene, camera);
+  const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+  const px = new Uint8Array(4);
+  const out = [];
+  const n = grid || 5;
+  for (let gy = 0; gy < n; gy++) {
+    const row = [];
+    for (let gx = 0; gx < n; gx++) {
+      const x = Math.floor((gx + 0.5) / n * w);
+      const y = Math.floor((gy + 0.5) / n * h);   // gl origin bottom-left
+      gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      row.push([px[0], px[1], px[2]]);
+    }
+    out.push(row);
+  }
+  return JSON.stringify({ size: [w, h], grid: out });
+};
+window.__dumpPNG = () => {
+  const gl = renderer.getContext();
+  renderer.render(scene, camera);
+  const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+  const buf = new Uint8Array(w * h * 4);
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const cx = cv.getContext('2d');
+  const img = cx.createImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    const src = (h - 1 - y) * w * 4, dst = y * w * 4;
+    img.data.set(buf.subarray(src, src + w * 4), dst);
+  }
+  cx.putImageData(img, 0, 0);
+  return cv.toDataURL('image/png');
+};
+window.__probeWorld = (pts) => {
+  const gl = renderer.getContext();
+  renderer.render(scene, camera);
+  const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+  const v = new THREE.Vector3();
+  const px = new Uint8Array(4);
+  const out = [];
+  for (const P of pts) {
+    v.set(P[0], P[1], P[2]).project(camera);
+    const x = Math.round((v.x * 0.5 + 0.5) * w);
+    const y = Math.round((v.y * 0.5 + 0.5) * h);
+    if (x < 0 || y < 0 || x >= w || y >= h) { out.push({ P, off: true }); continue; }
+    gl.readPixels(x, h - 1 - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    out.push({ P, xy: [x, y], rgb: [px[0], px[1], px[2]] });
+  }
+  return JSON.stringify(out);
+};
+window.__internals = { terrainHeight, ISL_POS, ISL_NODES, ITEM_WORLD, ISLANDS, FLOWS, FLOW_OBJ, scene, camera, renderer, controls, Clock, STATE, TOGGLES, ARCH };
+window.__pick = (px, py) => {
+  const rc = new THREE.Raycaster();
+  const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight;
+  rc.setFromCamera(new THREE.Vector2((px / w) * 2 - 1, -(py / h) * 2 + 1), camera);
+  const hits = rc.intersectObjects(scene.children, true).slice(0, 6);
+  return JSON.stringify(hits.map(h => ({
+    d: +h.distance.toFixed(1),
+    type: h.object.type,
+    mat: h.object.material && h.object.material.type,
+    col: h.object.material && h.object.material.color ? '#' + h.object.material.color.getHexString() : '',
+    geo: h.object.geometry ? h.object.geometry.type : '',
+    userData: h.object.userData,
+    inst: h.instanceId
+  })));
+};
+window.__errs = [];
+window.addEventListener('error', (e) => { window.__errs.push(String(e.message)); });
+
+</script>
+</body>
+</html>
