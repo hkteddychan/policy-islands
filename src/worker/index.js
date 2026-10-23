@@ -382,6 +382,11 @@ export async function handleRequest(request, env = {}) {
       if (!r.ok) return fail(r.error, r.status);
       return json({ token: r.token });
     }
+    if (path === '/api/leaderboard') {
+      const r = await doCall(env, '/leaderboard');
+      if (!r.ok) return fail(r.error, r.status);
+      return json(r.data);
+    }
     if (path === '/api/mutations' && method === 'POST') {
       const auth = request.headers.get('Authorization') || '';
       const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -391,9 +396,11 @@ export async function handleRequest(request, env = {}) {
       try { body = await request.json(); } catch { return fail('invalid JSON', 400); }
       if (!body.type || !body.payload) return fail('type and payload required', 400);
       const stub = await doStub(env);
+      // actorToken 用 full hash（SHA-256 唔會逆推，安全）；DO 用佢加分
+      const fullHash = await sha256Hex(token);
       const r = await stub.fetch(new Request(DO_ORIGIN + '/mutate', {
         method: 'POST',
-        body: JSON.stringify({ type: body.type, payload: body.payload, actorToken: token.slice(0, 12) })
+        body: JSON.stringify({ type: body.type, payload: body.payload, actorToken: fullHash })
       }));
       const d = await r.json().catch(() => null);
       if (!r.ok) return fail((d && d.error) || 'mutation rejected', r.status);

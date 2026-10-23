@@ -347,7 +347,7 @@ async function main() {
 
   // 前端 09-net.js 存在（build ORDER 加咗）
   const netSrc = await readFile(path.join(ROOT, 'src', '09-net.js'), 'utf8');
-  check('09-net.js exists with WS + submit', /connectWS/.test(netSrc) && /submitMutation/.test(netSrc) && /injectAddUI/.test(netSrc));
+  check('09-net.js exists with polling + submit + UI', /startPolling/.test(netSrc) && /submitMutation/.test(netSrc) && /injectAddUI/.test(netSrc) && /openLeaderboard/.test(netSrc));
 
   // 04-buildings.js 有動態新增 expose
   const bSrc = await readFile(path.join(ROOT, 'src', '04-buildings.js'), 'utf8');

@@ -195,6 +195,13 @@ export class WorldRoom {
         const u = this.sql.exec('SELECT id FROM users WHERE token_hash = ?', hash).toArray()[0];
         return Response.json({ ok: !!u });
       }
+      // 遊戲改進 A：排行榜
+      if (path === '/leaderboard' && request.method === 'GET') {
+        await this.ensureInit();
+        const rows = this.sql.exec(
+          "SELECT handle, score, last_seen FROM users WHERE score > 0 ORDER BY score DESC LIMIT 10").toArray();
+        return Response.json({ leaderboard: rows.map(r => ({ handle: r.handle || '匿名市民', score: r.score, lastSeen: r.last_seen })) });
+      }
       // Phase 4：新聞去重 + gating
       if (path === '/news/check' && request.method === 'GET') {
         const id = url.searchParams.get('id') || '';
@@ -282,7 +289,7 @@ export class WorldRoom {
       'INSERT INTO mutations (seq, type, payload_json, actor_token, created_at) VALUES (?,?,?,?,?)',
       seq, type, JSON.stringify(payload), actorToken || null, now);
 
-    const result = this.applyMutation(type, payload, now);
+    const result = this.applyMutation(type, payload, now, actorToken);
     if (!result.ok) return { ok: false, status: 400, error: result.error };
 
     // 廣播俾所有連線（Phase 2）
@@ -324,7 +331,7 @@ export class WorldRoom {
     return 'unknown mutation type: ' + type;
   }
 
-  applyMutation(type, payload, now) {
+  applyMutation(type, payload, now, actorToken) {
     if (type === 'add_item') {
       const it = payload.item;
       this.sql.exec(
@@ -333,6 +340,11 @@ export class WorldRoom {
         it.id, it.islandId, it.no ?? 99, it.model, it.name.zh, it.name.en || it.name.zh,
         JSON.stringify(it.facts || DEFAULT_FACTS), JSON.stringify(it.timeline || DEFAULT_TIMELINE),
         it.src || '市民提案', it.freq || '即時', now, payload.actorToken || null);
+      // 貢獻分：+10（actorToken 係 full hash）
+      if (actorToken) {
+        this.sql.exec('UPDATE users SET score = score + 10, last_seen = ? WHERE token_hash = ?',
+          now, actorToken);
+      }
       return { ok: true };
     }
     if (type === 'add_island') {
@@ -342,7 +354,7 @@ export class WorldRoom {
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
         isl.id, isl.no ?? '99', isl.theme || 'news', isl.name.zh, isl.name.en || isl.name.zh,
         isl.summary?.zh || '', isl.summary?.en || '', isl.icon || '📰', isl.color ?? 0x9cc27a,
-        isl.ang ?? null, isl.radius ?? 32, 'news', isl.newsId || null, now, payload.actorToken || null);
+        isl.ang ?? null, isl.radius ?? 32, 'news', isl.newsId || null, now, actorToken || null);
       // 新聞島附帶一座地標細項（自動）
       const itemId = isl.id + '-i1';
       this.sql.exec(
@@ -361,7 +373,7 @@ export class WorldRoom {
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
         f.id, f.from, f.to, f.kind || 'pending', f.ev || 'C', '2026 Q4', f.depts ?? 1,
         f.carry?.zh || '待定', f.carry?.en || 'TBD', f.icon || '📄', f.note?.zh || '', f.note?.en || '',
-        now, payload.actorToken || null);
+        now, actorToken || null);
       return { ok: true };
     }
     return { ok: false, error: 'unknown type' };
@@ -374,6 +386,9 @@ export class WorldRoom {
       if (this.ready) return;
       this.sql.exec(SCHEMA_SQL);
       await this.seedIfEmpty();
+      // 兼容舊表：users.score（遊戲改進 A：貢獻分）
+      try { this.sql.exec('ALTER TABLE users ADD COLUMN score INTEGER DEFAULT 0'); }
+      catch (e) { /* 已有欄位 */ }
       this.ready = true;
     });
   }
