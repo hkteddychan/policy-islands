@@ -774,10 +774,15 @@ window.__addItemMesh = function (item) {
   ARCH[item.model](b, item.id, item.islandId);
   ITEM_WORLD[item.id] = { pos: new THREE.Vector3(px, ISL_TOP, pz), isl: item.islandId, scale: 2.5, rot: -a + 0.4 };
   scene.add(b.group);
+  if (typeof STATE !== 'undefined') STATE.dirty = true;   // 唔 set dirty 唔會 render
   return true;
 };
 window.__addIsland = function (isl) {
-  if (ISL_BY_ID[isl.id] || ISL_NODES[isl.id]) return false;
+  // 已完整建好（ISL_NODES 有 entry）→ skip
+  if (ISL_NODES[isl.id]) return false;
+  // ISLANDS 入面有同 id 但未建好嘅污染 entry（舊 code push 咗但 buildIsland 冇行）→ 移除
+  const pollIdx = ISLANDS.findIndex(i => i.id === isl.id);
+  if (pollIdx >= 0) ISLANDS.splice(pollIdx, 1);
   // 新聞島：外圈 r=32，角度避開現有島（唔好同 hub/theme 島重疊）
   const taken = new Set(ISLANDS.filter(I => I.ang !== null).map(I => I.ang));
   let ang = (RNG() * 360);
@@ -788,7 +793,11 @@ window.__addIsland = function (isl) {
   ISL_BY_ID[isl.id] = isl;
   ISLANDS.push(isl);
   const g = buildIsland(isl);
-  // 新聞島地標細項（server 已建立對應 item；buildIsland 唔起 items，由 ITEMS 放置邏輯做）
+  // 新聞島 label（否則 updateLabels crash：ISL_MESH[id].label 係 null）
+  if (typeof createIslandLabel === 'function') createIslandLabel(isl);
+  // 💡 唔 set dirty → CSS2DRenderer 唔會 re-render → 新 label/mesh 睇唔到
+  if (typeof STATE !== 'undefined') STATE.dirty = true;
+  if (typeof updateLabels === 'function') updateLabels();
   return true;
 };
 window.__islandIds = () => Object.keys(ISL_NODES);

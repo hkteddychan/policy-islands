@@ -52,6 +52,7 @@ function updateSmallLOD(dt) {
   lodTick = 0;
   for (const I of ISLANDS) {
     const isl = ISL_NODES[I.id];
+    if (!isl) continue;   // 新聞島若未完成 buildIsland（__addIsland 早期失敗）都唔可以 crash
     const d = Math.hypot(camera.position.x - isl.x, camera.position.y - ISL_TOP, camera.position.z - isl.z);
     setSmallHidden(I.id, d >= 26);
   }

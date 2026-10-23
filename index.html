@@ -1808,10 +1808,15 @@ window.__addItemMesh = function (item) {
   ARCH[item.model](b, item.id, item.islandId);
   ITEM_WORLD[item.id] = { pos: new THREE.Vector3(px, ISL_TOP, pz), isl: item.islandId, scale: 2.5, rot: -a + 0.4 };
   scene.add(b.group);
+  if (typeof STATE !== 'undefined') STATE.dirty = true;   // 唔 set dirty 唔會 render
   return true;
 };
 window.__addIsland = function (isl) {
-  if (ISL_BY_ID[isl.id] || ISL_NODES[isl.id]) return false;
+  // 已完整建好（ISL_NODES 有 entry）→ skip
+  if (ISL_NODES[isl.id]) return false;
+  // ISLANDS 入面有同 id 但未建好嘅污染 entry（舊 code push 咗但 buildIsland 冇行）→ 移除
+  const pollIdx = ISLANDS.findIndex(i => i.id === isl.id);
+  if (pollIdx >= 0) ISLANDS.splice(pollIdx, 1);
   // 新聞島：外圈 r=32，角度避開現有島（唔好同 hub/theme 島重疊）
   const taken = new Set(ISLANDS.filter(I => I.ang !== null).map(I => I.ang));
   let ang = (RNG() * 360);
@@ -1822,7 +1827,11 @@ window.__addIsland = function (isl) {
   ISL_BY_ID[isl.id] = isl;
   ISLANDS.push(isl);
   const g = buildIsland(isl);
-  // 新聞島地標細項（server 已建立對應 item；buildIsland 唔起 items，由 ITEMS 放置邏輯做）
+  // 新聞島 label（否則 updateLabels crash：ISL_MESH[id].label 係 null）
+  if (typeof createIslandLabel === 'function') createIslandLabel(isl);
+  // 💡 唔 set dirty → CSS2DRenderer 唔會 re-render → 新 label/mesh 睇唔到
+  if (typeof STATE !== 'undefined') STATE.dirty = true;
+  if (typeof updateLabels === 'function') updateLabels();
   return true;
 };
 window.__islandIds = () => Object.keys(ISL_NODES);
@@ -2245,8 +2254,9 @@ const TOGGLES = { names: false, carry: true, flows: false, pause: false, top: fa
 const SEL = { kind: null, id: null };
 
 /* ---------- island labels ---------- */
-for (const I of ISLANDS) {
+function createIslandLabel(I) {
   const isl = ISL_NODES[I.id];
+  if (!isl) return;
   const el = document.createElement('div');
   el.className = 'ilabel';
   el.textContent = I.no + ' ' + tr(I.name);
@@ -2256,6 +2266,7 @@ for (const I of ISLANDS) {
   scene.add(obj);
   ISL_MESH[I.id].label = { obj, el };
 }
+ISLANDS.forEach(createIslandLabel);
 
 /* ---------- item pins (①②③) ---------- */
 const pinGroup = new THREE.Group();
@@ -2453,7 +2464,8 @@ function select(kind, id) {
 const labelBoxes = [];
 function updateLabels() {
   for (const I of ISLANDS) {
-    const L = ISL_MESH[I.id].label;
+    const L = ISL_MESH[I.id] && ISL_MESH[I.id].label;
+    if (!L || !L.el) continue;   // 新聞島 label 未建好都唔可以 crash
     const sel = SEL.kind === 'island' && SEL.id === I.id;
     L.el.classList.toggle('sel', sel);
     L.el.classList.toggle('dim', !!SEL.kind && !sel);
@@ -2462,7 +2474,7 @@ function updateLabels() {
   const panels = ['brand', 'side', 'card', 'hud', 'logPanel'].map(id => document.getElementById(id)).filter(e => e && !e.hidden && e.offsetParent !== null);
   const panelRects = panels.map(p => p.getBoundingClientRect());
   labelBoxes.length = 0;
-  const list = ISLANDS.map(I => ISL_MESH[I.id].label);
+  const list = ISLANDS.map(I => (ISL_MESH[I.id] && ISL_MESH[I.id].label) || null).filter(Boolean);
   for (const L of list) {
     const r = L.el.getBoundingClientRect();
     if (!r.width) continue;
@@ -2829,6 +2841,7 @@ function updateSmallLOD(dt) {
   lodTick = 0;
   for (const I of ISLANDS) {
     const isl = ISL_NODES[I.id];
+    if (!isl) continue;   // 新聞島若未完成 buildIsland（__addIsland 早期失敗）都唔可以 crash
     const d = Math.hypot(camera.position.x - isl.x, camera.position.y - ISL_TOP, camera.position.z - isl.z);
     setSmallHidden(I.id, d >= 26);
   }
@@ -3074,8 +3087,9 @@ window.addEventListener('error', (e) => { window.__errs.push(String(e.message));
     }
     for (const isl of w.islands || []) {
       if (isl.origin === 'news' && !ISL_BY_ID[isl.id] && window.__addIsland) {
-        ISLANDS.push(isl);
-        ISL_BY_ID[isl.id] = isl;
+        // ⚠️ 唔好自己 push/設 ISL_BY_ID —— __addIsland 開頭 guard 會因此 return false
+        // 導致 buildIsland 冇行、ISL_NODES 冇 entry（crash updateSmallLOD）。
+        // __addIsland 自己會做：ISL_POS 計算 + ISL_BY_ID + ISLANDS.push + buildIsland。
         window.__addIsland(isl);
         // 新聞島地標細項
         if (window.__addItemMesh) {
@@ -3112,17 +3126,17 @@ window.addEventListener('error', (e) => { window.__errs.push(String(e.message));
 
   function handleMutation(mut) {
     NET.seq = Math.max(NET.seq, mut.seq || 0);
+    try {
+      if (typeof STATE !== 'undefined') STATE.dirty = true;
+      if (typeof updateLabels === 'function') updateLabels();
+    } catch (e) {}
     const p = mut.payload || {};
     if (mut.type === 'add_item' && p.item && !ITEMS[p.item.id]) {
       ITEMS[p.item.id] = p.item;
       if (window.__addItemMesh) window.__addItemMesh(p.item);
       toast('＋ ' + (p.item.name && p.item.name.zh) + ' 已加入世界');
-    } else if (mut.type === 'add_island' && p.island && !ISL_BY_ID[p.island.id]) {
-      if (window.__addIsland) {
-        ISLANDS.push(p.island);
-        ISL_BY_ID[p.island.id] = p.island;
-        window.__addIsland(p.island);
-      }
+    } else if (mut.type === 'add_island' && p.island) {
+      if (window.__addIsland) window.__addIsland(p.island);   // 佢做晒 push+build+label
       toast('📰 新聞島「' + (p.island.name && p.island.name.zh) + '」出現');
     } else if (mut.type === 'add_flow' && p.flow) {
       if (!FLOWS.some(f => f.id === p.flow.id)) FLOWS.push(p.flow);
@@ -3148,11 +3162,7 @@ window.addEventListener('error', (e) => { window.__errs.push(String(e.message));
         if (window.__addItemMesh) window.__addItemMesh(payload.item);
       }
       if (type === 'add_island' && payload.island) {
-        if (window.__addIsland) {
-          ISLANDS.push(payload.island);
-          ISL_BY_ID[payload.island.id] = payload.island;
-          window.__addIsland(payload.island);
-        }
+        if (window.__addIsland) window.__addIsland(payload.island);
       }
     }
     return d;

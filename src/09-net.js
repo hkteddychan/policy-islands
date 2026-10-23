@@ -50,8 +50,9 @@
     }
     for (const isl of w.islands || []) {
       if (isl.origin === 'news' && !ISL_BY_ID[isl.id] && window.__addIsland) {
-        ISLANDS.push(isl);
-        ISL_BY_ID[isl.id] = isl;
+        // ⚠️ 唔好自己 push/設 ISL_BY_ID —— __addIsland 開頭 guard 會因此 return false
+        // 導致 buildIsland 冇行、ISL_NODES 冇 entry（crash updateSmallLOD）。
+        // __addIsland 自己會做：ISL_POS 計算 + ISL_BY_ID + ISLANDS.push + buildIsland。
         window.__addIsland(isl);
         // 新聞島地標細項
         if (window.__addItemMesh) {
@@ -88,17 +89,17 @@
 
   function handleMutation(mut) {
     NET.seq = Math.max(NET.seq, mut.seq || 0);
+    try {
+      if (typeof STATE !== 'undefined') STATE.dirty = true;
+      if (typeof updateLabels === 'function') updateLabels();
+    } catch (e) {}
     const p = mut.payload || {};
     if (mut.type === 'add_item' && p.item && !ITEMS[p.item.id]) {
       ITEMS[p.item.id] = p.item;
       if (window.__addItemMesh) window.__addItemMesh(p.item);
       toast('＋ ' + (p.item.name && p.item.name.zh) + ' 已加入世界');
-    } else if (mut.type === 'add_island' && p.island && !ISL_BY_ID[p.island.id]) {
-      if (window.__addIsland) {
-        ISLANDS.push(p.island);
-        ISL_BY_ID[p.island.id] = p.island;
-        window.__addIsland(p.island);
-      }
+    } else if (mut.type === 'add_island' && p.island) {
+      if (window.__addIsland) window.__addIsland(p.island);   // 佢做晒 push+build+label
       toast('📰 新聞島「' + (p.island.name && p.island.name.zh) + '」出現');
     } else if (mut.type === 'add_flow' && p.flow) {
       if (!FLOWS.some(f => f.id === p.flow.id)) FLOWS.push(p.flow);
@@ -124,11 +125,7 @@
         if (window.__addItemMesh) window.__addItemMesh(payload.item);
       }
       if (type === 'add_island' && payload.island) {
-        if (window.__addIsland) {
-          ISLANDS.push(payload.island);
-          ISL_BY_ID[payload.island.id] = payload.island;
-          window.__addIsland(payload.island);
-        }
+        if (window.__addIsland) window.__addIsland(payload.island);
       }
     }
     return d;

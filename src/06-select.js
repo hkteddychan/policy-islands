@@ -3,8 +3,9 @@ const TOGGLES = { names: false, carry: true, flows: false, pause: false, top: fa
 const SEL = { kind: null, id: null };
 
 /* ---------- island labels ---------- */
-for (const I of ISLANDS) {
+function createIslandLabel(I) {
   const isl = ISL_NODES[I.id];
+  if (!isl) return;
   const el = document.createElement('div');
   el.className = 'ilabel';
   el.textContent = I.no + ' ' + tr(I.name);
@@ -14,6 +15,7 @@ for (const I of ISLANDS) {
   scene.add(obj);
   ISL_MESH[I.id].label = { obj, el };
 }
+ISLANDS.forEach(createIslandLabel);
 
 /* ---------- item pins (①②③) ---------- */
 const pinGroup = new THREE.Group();
@@ -211,7 +213,8 @@ function select(kind, id) {
 const labelBoxes = [];
 function updateLabels() {
   for (const I of ISLANDS) {
-    const L = ISL_MESH[I.id].label;
+    const L = ISL_MESH[I.id] && ISL_MESH[I.id].label;
+    if (!L || !L.el) continue;   // 新聞島 label 未建好都唔可以 crash
     const sel = SEL.kind === 'island' && SEL.id === I.id;
     L.el.classList.toggle('sel', sel);
     L.el.classList.toggle('dim', !!SEL.kind && !sel);
@@ -220,7 +223,7 @@ function updateLabels() {
   const panels = ['brand', 'side', 'card', 'hud', 'logPanel'].map(id => document.getElementById(id)).filter(e => e && !e.hidden && e.offsetParent !== null);
   const panelRects = panels.map(p => p.getBoundingClientRect());
   labelBoxes.length = 0;
-  const list = ISLANDS.map(I => ISL_MESH[I.id].label);
+  const list = ISLANDS.map(I => (ISL_MESH[I.id] && ISL_MESH[I.id].label) || null).filter(Boolean);
   for (const L of list) {
     const r = L.el.getBoundingClientRect();
     if (!r.width) continue;
