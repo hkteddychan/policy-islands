@@ -74,8 +74,8 @@ async function main() {
     encoding: 'utf8',
   }).trim();
   console.log(genOut);
-  check('gen-seed reports 7/21/12',
-    /islands=7\b/.test(genOut) && /items=21\b/.test(genOut) && /flows=12\b/.test(genOut),
+  check('gen-seed reports 7/27/12',
+    /islands=7\b/.test(genOut) && /items=27\b/.test(genOut) && /flows=12\b/.test(genOut),
     genOut);
 
   // 2. Build an in-memory DB, apply schema + seed.
@@ -101,13 +101,13 @@ async function main() {
   ).get().n);
 
   check('islands = 7', count('islands') === 7, `got ${count('islands')}`);
-  check('items = 21', count('items') === 21, `got ${count('items')}`);
+  check('items = 27', count('items') === 27, `got ${count('items')}`);
   check('flows = 12', count('flows') === 12, `got ${count('flows')}`);
 
   // 3. Seed must be safely repeatable.
   db.exec(seed);
-  check('seed is repeatable (7/21/12)',
-    count('islands') === 7 && count('items') === 21 && count('flows') === 12,
+  check('seed is repeatable (7/27/12)',
+    count('islands') === 7 && count('items') === 27 && count('flows') === 12,
     `${count('islands')}/${count('items')}/${count('flows')}`);
 
   const seqRow = db.prepare("SELECT v FROM world_meta WHERE k = 'seq'").get();
@@ -151,9 +151,9 @@ async function main() {
 
   const world = await call('/api/world');
   check('GET /api/world status', world.res.status === 200, String(world.res.status));
-  check('GET /api/world counts 7/21/12',
+  check('GET /api/world counts 7/27/12',
     world.body?.islands?.length === 7 &&
-    world.body?.items?.length === 21 &&
+    world.body?.items?.length === 27 &&
     world.body?.flows?.length === 12,
     JSON.stringify({
       islands: world.body?.islands?.length,
@@ -249,9 +249,9 @@ async function main() {
     JSON.stringify(doHealth.body));
 
   const doWorld = await call('/api/world', { env: doEnv });
-  check('DO /api/world counts 7/21/12',
+  check('DO /api/world counts 7/27/12',
     doWorld.res.status === 200 && doWorld.body?.islands?.length === 7 &&
-    doWorld.body?.items?.length === 21 && doWorld.body?.flows?.length === 12,
+    doWorld.body?.items?.length === 27 && doWorld.body?.flows?.length === 12,
     JSON.stringify({
       islands: doWorld.body?.islands?.length,
       items: doWorld.body?.items?.length,
@@ -272,6 +272,98 @@ async function main() {
   check('DO /api/mutations works', doMutations.res.status === 200 &&
     Array.isArray(doMutations.body?.mutations), JSON.stringify(doMutations.body));
 
+  // ── Phase 2/3/4：session + mutation + gate（mock DO fetch 介面）──────────
+  const wsSessions = [];
+  const doMock2 = {
+    async fetch(request, server) {
+      const u = new URL(request.url);
+      const p = u.pathname.replace(/\/+$/, '') || '/';
+      const jsonRes = (obj, status = 200) => new Response(JSON.stringify(obj), {
+        status, headers: { 'Content-Type': 'application/json' } });
+      if (p === '/session' && request.method === 'POST') { return jsonRes({ ok: true }); }
+      if (p === '/verify') {
+        // mock：接受任何 valid-format token（測試路由流程，唔測密碼學）
+        const hash = u.searchParams.get('hash') || '';
+        return jsonRes({ ok: hash.length === 64 });
+      }
+      if (p === '/mutate' && request.method === 'POST') {
+        const body = await request.json();
+        if (body.type === 'add_item') {
+          const ok = body.payload?.item?.model === 'chaChaan';
+          return jsonRes(ok ? { ok: true, seq: 42 } : { ok: false, error: 'model not allowed' }, ok ? 200 : 400);
+        }
+        if (body.type === 'add_island') {
+          return jsonRes({ ok: true, seq: 43 });
+        }
+        return jsonRes({ ok: false, error: 'unknown type' }, 400);
+      }
+      if (p === '/news/gate') {
+        const theme = u.searchParams.get('theme') || '';
+        return jsonRes({ ok: theme === 'transport' ? false : true, count: theme === 'transport' ? 3 : 0, total: 7 });
+      }
+      if (p === '/news/check') { return jsonRes({ exists: false }); }
+      return jsonRes({ error: 'not found' }, 404);
+    }
+  };
+  const env23 = { WORLD_ROOM: { getByName: () => doMock2 } };
+
+  // session（mock 返 token）
+  const sessionRes = await worker.handleRequest(new Request('https://policy-islands.test/api/session', { method: 'POST' }), env23);
+  const sessionBody = await sessionRes.json().catch(() => null);
+  check('POST /api/session returns token', sessionRes.status === 200 && typeof sessionBody?.token === 'string' && /^pi_[0-9a-f]{64}$/.test(sessionBody.token));
+
+  // mutation 冇 token → 401
+  const noTok = await worker.handleRequest(new Request('https://policy-islands.test/api/mutations', { method: 'POST', body: JSON.stringify({ type: 'add_item', payload: {} }) }), env23);
+  check('mutation without token → 401', noTok.status === 401);
+
+  // mutation 有 token（mock verify 接受 a1b2...）→ DO 拒絕唔喺白名單嘅 model
+  const badModel = await worker.handleRequest(new Request('https://policy-islands.test/api/mutations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer pi_' + 'a1b2'.padEnd(64, '0') },
+    body: JSON.stringify({ type: 'add_item', payload: { item: { id: 'u1', islandId: 'hub', model: 'skyscraper2', name: { zh: 'x' } } } })
+  }), env23);
+  check('mutation rejected model → 400', badModel.status === 400);
+
+  // 合法 mutation → 200 + seq
+  const okMut = await worker.handleRequest(new Request('https://policy-islands.test/api/mutations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer pi_' + 'a1b2'.padEnd(64, '0') },
+    body: JSON.stringify({ type: 'add_item', payload: { item: { id: 'u2', islandId: 'hub', model: 'chaChaan', name: { zh: '茶記' } } } })
+  }), env23);
+  const okMutBody = await okMut.json().catch(() => null);
+  check('valid mutation → 200 + seq', okMut.status === 200 && okMutBody?.seq === 42);
+
+  // WS upgrade 需要 Upgrade header
+  const wsNoUpgrade = await worker.handleRequest(new Request('https://policy-islands.test/ws'), env23);
+  check('GET /ws without Upgrade → 426', wsNoUpgrade.status === 426);
+
+  // 新聞 gate（mock：transport 已滿 → 拒）
+  const gate = await doMock2.fetch(new Request('https://worldroom.internal/news/gate?day=20261023&theme=transport'));
+  const gateBody = await gate.json();
+  check('news gate blocks over-limit theme', gateBody.ok === false);
+  const gate2 = await doMock2.fetch(new Request('https://worldroom.internal/news/gate?day=20261023&theme=health'));
+  const gate2Body = await gate2.json();
+  check('news gate allows free theme', gate2Body.ok === true);
+
+  // 前端 09-net.js 存在（build ORDER 加咗）
+  const netSrc = await readFile(path.join(ROOT, 'src', '09-net.js'), 'utf8');
+  check('09-net.js exists with WS + submit', /connectWS/.test(netSrc) && /submitMutation/.test(netSrc) && /injectAddUI/.test(netSrc));
+
+  // 04-buildings.js 有動態新增 expose
+  const bSrc = await readFile(path.join(ROOT, 'src', '04-buildings.js'), 'utf8');
+  check('04-buildings exposes __addItemMesh/__addIsland',
+    /__addItemMesh/.test(bSrc) && /__addIsland/.test(bSrc) && /standaloneBuilder/.test(bSrc));
+
+  // 14 個香港 archetypes 存在
+  const hkArches = ['tram', 'starferry', 'tonglau', 'estate', 'chaChaan', 'market', 'temple', 'pawnshop', 'skyscraper', 'cinema', 'jockey', 'kcr', 'mahjong', 'lighthouse']
+    .filter(k => new RegExp('ARCH\\.' + k + '\\s*=').test(bSrc));
+  check('14 HK archetypes present', hkArches.length === 14, 'found ' + hkArches.length);
+
+  // 6 個新 HK items 喺 01-data.js
+  const dSrc = await readFile(path.join(ROOT, 'src', '01-data.js'), 'utf8');
+  const hkItems = ['t4', 't5', 'e4', 'o4', 'o5', 'c4'].filter(k => new RegExp("'" + k + "':").test(dSrc));
+  check('6 HK items added', hkItems.length === 6, 'found ' + hkItems.length);
+
   // WorldRoom class must exist and expose the RPC methods the Worker calls.
   const roomFile = path.join(ROOT, 'src', 'worker', 'world-room.js');
   const roomSrc = await readFile(roomFile, 'utf8');
@@ -281,7 +373,7 @@ async function main() {
     /async getWorld\(/.test(roomSrc) && /async getIsland\(/.test(roomSrc) &&
     /async getMutations\(/.test(roomSrc));
   check('WorldRoom has internal fetch() entry (RPC not used)',
-    /async fetch\(request\)/.test(roomSrc));
+    /async fetch\(request/.test(roomSrc));
   check('WorldRoom uses ctx.storage.sql',
     /ctx\.storage\.sql/.test(roomSrc) || /this\.sql\s*=\s*ctx\.storage\.sql/.test(roomSrc));
 

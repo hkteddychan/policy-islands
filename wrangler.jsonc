@@ -23,5 +23,10 @@
       "tag": "v1",
       "new_sqlite_classes": ["WorldRoom"]
     }
-  ]
+  ],
+  "triggers": {
+    "crons": [
+      "0 */2 * * *"
+    ]
+  }
 }

@@ -113,9 +113,18 @@ const accGeo = {
     { geo: new THREE.TorusGeometry(0.055, 0.010, 6, 12), x: 0.075, y: -0.075 },
     { geo: new THREE.BoxGeometry(0.13, 0.014, 0.014), y: -0.06 }
   ]),
-  case: merged([{ geo: new THREE.BoxGeometry(0.075, 0.09, 0.035) }])
+  case: merged([{ geo: new THREE.BoxGeometry(0.075, 0.09, 0.035) }]),
+  apron: merged([{ geo: new THREE.BoxGeometry(0.13, 0.14, 0.02), y: 0.02 }]),
+  cap: merged([
+    { geo: new THREE.CylinderGeometry(0.055, 0.058, 0.035, 10) },
+    { geo: new THREE.CylinderGeometry(0.062, 0.062, 0.015, 10), y: 0.018 }
+  ]),
+  bag: merged([
+    { geo: new THREE.BoxGeometry(0.08, 0.11, 0.05), x: 0.06, y: -0.02 },
+    { geo: new THREE.TorusGeometry(0.022, 0.008, 6, 10), x: 0.06, y: 0.045 }
+  ])
 };
-const ACC_ORDER = ['vest', 'badge', 'coat', 'cane', 'hat', 'helmet', 'straw', 'stroller', 'bike', 'case'];
+const ACC_ORDER = ['vest', 'badge', 'coat', 'cane', 'hat', 'helmet', 'straw', 'stroller', 'bike', 'case', 'apron', 'cap', 'bag'];
 
 /* ---------- roles ---------- */
 const ROLES = {
@@ -128,20 +137,31 @@ const ROLES = {
   farmer: { body: 0x71806a, hair: 0x2b2320, acc: ['straw'] },
   worker: { body: 0xfcea8b, hair: 0x2b2320, acc: ['helmet'] },
   researcher: { body: 0xfff8f4, hair: 0x3a3330, acc: ['coat'] },
-  traveller: { body: 0x58a6a6, hair: 0x3a3330, acc: ['case'] }
+  traveller: { body: 0x58a6a6, hair: 0x3a3330, acc: ['case'] },
+  /* 香港新角色 */
+  waiter: { body: 0x4a7f8f, hair: 0x2b2320, acc: ['apron'] },
+  trammer: { body: 0x2e6a42, hair: 0x2b2320, acc: ['cap'] },
+  aunty: { body: 0xe89a9a, hair: 0x3a2a2a, acc: ['bag'] },
+  cop: { body: 0x24304a, hair: 0x2b2320, acc: ['cap', 'badge'] },
+  fireman: { body: 0xa83232, hair: 0x2b2320, acc: ['helmet'] },
+  fisher: { body: 0x4f7f9f, hair: 0x2b2320, acc: ['straw', 'bag'] },
+  hiker: { body: 0x6a8f4f, hair: 0x3a3330, acc: ['case', 'hat'] }
 };
 const ROLE_KEYS = Object.keys(ROLES);
 
 /* ---------- build walker list ---------- */
 const WALKERS = [];
-const FLOW_WALK_COUNT = { official: 12, thematic: 7, pending: 4 };
+const FLOW_WALK_COUNT = { official: 15, thematic: 9, pending: 5 };
 for (const f of FLOWS) {
   const o = FLOW_OBJ[f.id];
   const n = FLOW_WALK_COUNT[f.kind] || 6;
+  const pool = f.kind === 'official'
+    ? ['civil', 'resident', 'elder', 'commuter', 'worker', 'cop', 'trammer', 'waiter']
+    : (f.kind === 'thematic'
+      ? ['researcher', 'student', 'parent', 'resident', 'hiker', 'fisher']
+      : ['civil', 'traveller', 'resident', 'aunty', 'cop']);
   for (let i = 0; i < n; i++) {
-    const role = f.kind === 'official'
-      ? ['civil', 'resident', 'elder', 'commuter', 'worker'][i % 5]
-      : (f.kind === 'thematic' ? ['researcher', 'student', 'parent', 'resident'][i % 4] : ['civil', 'traveller', 'resident'][i % 3]);
+    const role = pool[i % pool.length];
     WALKERS.push({
       id: 'w' + WALKERS.length, flow: f.id, role,
       t: (i / n) + RNG() * 0.04, dir: i % 2 ? 1 : -1,
@@ -205,6 +225,9 @@ WALKERS.forEach((w, i) => {
     else if (k === 'stroller') tmpC.setHex(a ? PAL.teal : 0xffffff);
     else if (k === 'bike') tmpC.setHex(a ? 0x33302e : 0xffffff);
     else if (k === 'case') tmpC.setHex(a ? PAL.pastel[2] : 0xffffff);
+    else if (k === 'apron') tmpC.setHex(a ? 0xe8e2d4 : 0xffffff);
+    else if (k === 'cap') tmpC.setHex(a ? 0x24304a : 0xffffff);
+    else if (k === 'bag') tmpC.setHex(a ? 0xb48560 : 0xffffff);
     WM['acc_' + k].setColorAt(i, tmpC);
   }
 });

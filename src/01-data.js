@@ -216,7 +216,69 @@ const ITEMS = {
       { v: '1,050', u: { zh: '個', en: '' }, k: { zh: '檔口', en: 'vendors' } },
       { v: '4', u: { zh: '場', en: '' }, k: { zh: '每週墟市', en: 'markets per week' } }
     ],
-    timeline: [{ d: '2026 Q2', t: { zh: '墟市食品空氣與碳排標準', en: 'Food market air and carbon standards applied' } }] }
+    timeline: [{ d: '2026 Q2', t: { zh: '墟市食品空氣與碳排標準', en: 'Food market air and carbon standards applied' } }] },
+
+  /* ── 香港地標系列（新） ───────────────────────────────── */
+  't4': { isl: 'transport', no: 4, name: { zh: '叮叮電車廠', en: 'Tram Depot' }, model: 'tram', active: [420, 1260], src: '電車公司 2026 年報', freq: '每日',
+    facts: [
+      { v: '165', u: { zh: '部', en: '' }, k: { zh: '雙層電車', en: 'double-deck trams' } },
+      { v: '190,000', u: { zh: '人', en: '' }, k: { zh: '每日載客', en: 'riders per day' } },
+      { v: '120', u: { zh: '年', en: 'yr' }, k: { zh: '營運歷史', en: 'years operating' } }
+    ],
+    timeline: [
+      { d: '1904 Q3', t: { zh: '首班電車開出', en: 'First tram hit the rails' } },
+      { d: '2026 Q1', t: { zh: '低地台叮叮全面投入服務', en: 'Low-floor fleet fully in service' } }
+    ] },
+  't5': { isl: 'transport', no: 5, name: { zh: '天星碼頭', en: 'Star Ferry Pier' }, model: 'starferry', active: [360, 1380], src: '運輸署渡輪服務年報 2026', freq: '每日',
+    facts: [
+      { v: '70,000', u: { zh: '人', en: '' }, k: { zh: '每日乘客', en: 'passengers per day' } },
+      { v: '8', u: { zh: '分鐘', en: 'min' }, k: { zh: '一班航程', en: 'one-way crossing' } },
+      { v: '128', u: { zh: '年', en: 'yr' }, k: { zh: '渡輪服務', en: 'ferry heritage' } }
+    ],
+    timeline: [
+      { d: '1898 Q3', t: { zh: '天星小輪啟航', en: 'Star Ferry launched' } },
+      { d: '2025 Q4', t: { zh: '碼頭加裝無障礙登船橋', en: 'Accessible boarding ramps installed' } }
+    ] },
+  'e4': { isl: 'education', no: 4, name: { zh: '文武廟書室', en: 'Temple Study Hall' }, model: 'temple', active: [480, 1260], src: '東華三院教育檔案 2026', freq: '每季',
+    facts: [
+      { v: '180', u: { zh: '年', en: 'yr' }, k: { zh: '辦學歷史', en: 'years of study hall' } },
+      { v: '2,400', u: { zh: '名', en: '' }, k: { zh: '歷屆學子', en: 'alumni scholars' } },
+      { v: '4', u: { zh: '場', en: '' }, k: { zh: '每月公開講座', en: 'public lectures / month' } }
+    ],
+    timeline: [
+      { d: '1847 Q1', t: { zh: '文武廟書室設立', en: 'Study hall founded at Man Mo Temple' } },
+      { d: '2026 Q2', t: { zh: '書室與社區教室合併課程', en: 'Courses merged with community classrooms' } }
+    ] },
+  'o4': { isl: 'housing', no: 4, name: { zh: '唐樓騎樓街', en: 'Tong Lau Arcade' }, model: 'tonglau', active: [0, 1440], src: '市建局舊區復修統計 2026', freq: '每月',
+    facts: [
+      { v: '42', u: { zh: '幢', en: '' }, k: { zh: '復修唐樓', en: 'restored tong lau' } },
+      { v: '6.5', u: { zh: '萬', en: '' }, k: { zh: '居民受惠', en: 'residents benefited' } },
+      { v: '1.9', u: { zh: '倍', en: '' }, k: { zh: '樓價升幅', en: 'value uplift' } }
+    ],
+    timeline: [
+      { d: '2021 Q3', t: { zh: '騎樓街保育試點', en: 'Arcade conservation pilot' } },
+      { d: '2026 Q1', t: { zh: '唐樓群納入屋邨配額計算', en: 'Tong lau counted in estate quota' } }
+    ] },
+  'o5': { isl: 'housing', no: 5, name: { zh: '公屋高塔', en: 'Estate Tower' }, model: 'estate', active: [0, 1440], src: '房屋署 2026 建屋統計', freq: '每月',
+    facts: [
+      { v: '48', u: { zh: '層', en: '' }, k: { zh: '標準塔樓', en: 'storey tower' } },
+      { v: '7,300', u: { zh: '伙', en: '' }, k: { zh: '可建單位', en: 'units per phase' } },
+      { v: '22', u: { zh: '個月', en: 'mo' }, k: { zh: '預製組件工期', en: 'prefab build time' } }
+    ],
+    timeline: [
+      { d: '2023 Q2', t: { zh: '首座 MiC 高塔落成', en: 'First MiC tower completed' } },
+      { d: '2026 Q3', t: { zh: '高塔與球場共享天橋', en: 'Sky bridge links tower to courts' } }
+    ] },
+  'c4': { isl: 'economy', no: 4, name: { zh: '金融天際線', en: 'Finance Skyline' }, model: 'skyscraper', active: [540, 1320], src: '金管局金融統計季報 2026', freq: '每月',
+    facts: [
+      { v: '3.8', u: { zh: '億', en: 'bn' }, k: { zh: '日均交投', en: 'daily turnover' } },
+      { v: '61', u: { zh: '幢', en: '' }, k: { zh: '甲級商廈', en: 'grade-A towers' } },
+      { v: '412', u: { zh: '米', en: 'm' }, k: { zh: '最高建築', en: 'tallest tower' } }
+    ],
+    timeline: [
+      { d: '1990 Q2', t: { zh: '中環天際線成形', en: 'Central skyline took shape' } },
+      { d: '2026 Q4', t: { zh: '綠色商廈認證全覆蓋', en: 'All towers certified green' } }
+    ] }
 };
 
 /* ---------- flows (協作線) ---------- */

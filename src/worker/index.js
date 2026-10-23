@@ -212,6 +212,146 @@ async function fetchMutations(env, since) {
   return { mutations: (rows.results || []).map(mutationRow), seq: Number.isFinite(seq) ? seq : 0 };
 }
 
+// ── Phase 3：匿名 session ────────────────────────────────────────────────
+async function sha256Hex(text) {
+  const buf = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function randomToken() {
+  const arr = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(arr);
+  return 'pi_' + [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function createSession(env) {
+  if (!hasDO(env)) return { ok: false, status: 503, error: 'no world backend' };
+  const token = randomToken();
+  const hash = await sha256Hex(token);
+  const now = Date.now();
+  const stub = await doStub(env);
+  const r = await stub.fetch(new Request(DO_ORIGIN + '/session', {
+    method: 'POST',
+    body: JSON.stringify({ tokenHash: hash, now })
+  }));
+  if (!r.ok) return { ok: false, status: 500, error: 'session create failed' };
+  return { ok: true, token };
+}
+async function verifyToken(env, token) {
+  if (!token || typeof token !== 'string' || !/^pi_[0-9a-f]{64}$/.test(token)) return false;
+  if (!hasDO(env)) return false;
+  const hash = await sha256Hex(token);
+  const stub = await doStub(env);
+  const r = await stub.fetch(new Request(DO_ORIGIN + '/verify?hash=' + hash));
+  if (!r.ok) return false;
+  const d = await r.json();
+  return !!(d && d.ok);
+}
+
+// ── Phase 2：WebSocket upgrade → DO ───────────────────────────────────────
+async function handleWebSocket(request, env) {
+  const upgrade = request.headers.get('Upgrade');
+  if (upgrade !== 'websocket') return fail('Expected Upgrade: websocket', 426);
+  if (!hasDO(env)) return fail('no world backend', 503);
+  const stub = await doStub(env);
+  const pair = new WebSocketPair();
+  const [client, server] = Object.values(pair);
+  // 保留原始 headers（Upgrade/Connection），用 RequestInit 形式傳畀 DO
+  await stub.fetch(new Request(DO_ORIGIN + '/ws', { headers: request.headers }), server);
+  return new Response(null, { status: 101, webSocket: client });
+}
+
+// ── Phase 4：新聞 pipeline（cron）────────────────────────────────────────
+const NEWS_FEEDS = [
+  'https://www.info.gov.hk/gia/rss/general_zh.xml',
+  'https://rthk9.rthk.hk/rthk/news/rss/c_expressnews_clocal.xml'
+];
+const NEWS_KW = {
+  transport: ['巴士', '車費', '公共交通', '鐵路', '交通', '隧道', '單車', '的士', '渡輪', '機場', '港鐵', '小巴', '通勤', '口岸', '道路'],
+  education: ['學校', '教育', '學生', '老師', '教師', '課程', '考試', '大學', '學院', '圖書館', '閱讀', '培訓', '人才', '技能', '幼稚園', '中小學', '書'],
+  health: ['醫院', '診所', '健康', '醫生', '護士', '病人', '疾病', '疫苗', '流感', '病毒', '長者', '安老', '醫療', '藥物', '手術', '衞生', '精神', '復康'],
+  housing: ['房屋', '屋邨', '公屋', '居屋', '劏房', '租金', '租務', '業主', '租戶', '安置', '居所', '重建', '住宅', '樓價', '上樓', '青年宿舍'],
+  environment: ['環境', '綠化', '廢物', '垃圾', '回收', '污染', '碳', '排放', '河道', '海水', '噪音', '空氣', '氣候', '節能', '減廢', '樹木', '公園', '保育', '郊野'],
+  economy: ['經濟', '稅', '關稅', '財政', '預算', '貿易', '工商', '企業', '就業', '職位', '市場', '零售', '消費', 'GDP', '物價', '通脹', '旅遊', '投資', '金融', '銀行', '人民幣', '上市']
+};
+function classifyNews(text) {
+  let best = null, bestN = 0;
+  for (const t in NEWS_KW) {
+    const n = NEWS_KW[t].reduce((a, k) => a + (text.includes(k) ? 1 : 0), 0);
+    if (n > bestN) { bestN = n; best = t; }
+  }
+  return bestN >= 2 ? best : null;   // 至少要兩個關鍵詞先算命中（減假陽性）
+}
+function parseRss(xml) {
+  const items = [];
+  const re = /<item>([\s\S]*?)<\/item>/g;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    const block = m[1];
+    const title = (block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1] || '';
+    const link = (block.match(/<link>(.*?)<\/link>/) || [])[1] || '';
+    const descRaw = (block.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/) || [])[1] || '';
+    const desc = descRaw.replace(/<[^>]+>/g, '').slice(0, 400);
+    const date = (block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
+    if (title && link) items.push({ title: title.trim(), link: link.trim(), desc, date });
+  }
+  return items;
+}
+function newsId(url) {
+  // 同 news_items.id 一致：sha256(url) 前 16 hex
+  return [...new Uint8Array(new TextEncoder().encode(url)).slice(0, 8)]
+    .map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function runNewsPipeline(env) {
+  if (!hasDO(env)) return { ok: false, error: 'no backend' };
+  const stub = await doStub(env);
+  const now = new Date();
+  const dayKey = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const out = { fetched: 0, new: 0, created: 0, skipped: 0, errors: [] };
+
+  for (const feedUrl of NEWS_FEEDS) {
+    let xml;
+    try {
+      const res = await fetch(feedUrl, { headers: { 'User-Agent': 'policy-islands/1.0' } });
+      if (!res.ok) { out.errors.push(feedUrl + ' HTTP ' + res.status); continue; }
+      xml = await res.text();
+    } catch (e) { out.errors.push(feedUrl + ' ' + (e && e.message)); continue; }
+    const items = parseRss(xml);
+    out.fetched += items.length;
+    for (const it of items) {
+      const id = newsId(it.link);
+      const text = it.title + ' ' + it.desc;
+      const theme = classifyNews(text);
+      if (!theme) { out.skipped++; continue; }
+      // 去重：問 DO 呢條新聞見未
+      const dupRes = await stub.fetch(new Request(DO_ORIGIN + '/news/check?id=' + id));
+      const dup = await dupRes.json();
+      if (dup.exists) { out.skipped++; continue; }
+      out.new++;
+      // gating：今日新聞島數量 + 總島數量（由 DO 提供）
+      const gateRes = await stub.fetch(new Request(DO_ORIGIN + '/news/gate?day=' + dayKey + '&theme=' + theme));
+      const gate = await gateRes.json();
+      if (!gate.ok) { out.skipped++; continue; }
+      // 建島：news-YYYYMMDD-NN
+      const nn = String(gate.count + 1).padStart(2, '0');
+      const islandId = 'news-' + dayKey + '-' + nn;
+      const title = it.title.slice(0, 48);
+      const island = {
+        id: islandId, no: String(97 + gate.count), theme,
+        name: { zh: title, en: title },
+        summary: { zh: it.desc.slice(0, 120), en: it.desc.slice(0, 120) },
+        icon: '📰', color: 0x9cc27a, ang: null, radius: 32,
+        itemModel: theme === 'transport' ? 'kcr' : theme === 'health' ? 'clinic' : theme === 'education' ? 'temple' : theme === 'housing' ? 'estate' : theme === 'environment' ? 'lighthouse' : 'jockey'
+      };
+      const mutRes = await stub.fetch(new Request(DO_ORIGIN + '/mutate', {
+        method: 'POST',
+        body: JSON.stringify({ type: 'add_island', payload: { island }, actorToken: 'news-pipeline' })
+      }));
+      const mut = await mutRes.json();
+      if (mut.ok) { out.created++; } else { out.errors.push('create island failed: ' + mut.error); }
+    }
+  }
+  return out;
+}
+
 // ── router ─────────────────────────────────────────────────────────────────
 export async function handleRequest(request, env = {}) {
   const method = (request.method || 'GET').toUpperCase();
@@ -219,9 +359,8 @@ export async function handleRequest(request, env = {}) {
   if (method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
-  if (method !== 'GET') {
-    return fail('method not allowed', 405);
-  }
+  // 注意：POST 路由（/api/session、/api/mutations）由 router 處理；
+  // 其他非 GET path 喺 router 尾先回 405。
 
   let url;
   try {
@@ -233,6 +372,33 @@ export async function handleRequest(request, env = {}) {
   const path = url.pathname.replace(/\/+$/, '') || '/';
 
   try {
+    // Phase 2：WebSocket
+    if (path === '/ws') {
+      return await handleWebSocket(request, env);
+    }
+    // Phase 3：匿名 session + mutations
+    if (path === '/api/session' && method === 'POST') {
+      const r = await createSession(env);
+      if (!r.ok) return fail(r.error, r.status);
+      return json({ token: r.token });
+    }
+    if (path === '/api/mutations' && method === 'POST') {
+      const auth = request.headers.get('Authorization') || '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+      const okTok = await verifyToken(env, token);
+      if (!okTok) return fail('invalid or missing session token', 401);
+      let body;
+      try { body = await request.json(); } catch { return fail('invalid JSON', 400); }
+      if (!body.type || !body.payload) return fail('type and payload required', 400);
+      const stub = await doStub(env);
+      const r = await stub.fetch(new Request(DO_ORIGIN + '/mutate', {
+        method: 'POST',
+        body: JSON.stringify({ type: body.type, payload: body.payload, actorToken: token.slice(0, 12) })
+      }));
+      const d = await r.json().catch(() => null);
+      if (!r.ok) return fail((d && d.error) || 'mutation rejected', r.status);
+      return json({ ok: true, seq: d.seq });
+    }
     if (path === '/api/health') {
       return json({
         ok: true,
@@ -272,6 +438,7 @@ export async function handleRequest(request, env = {}) {
       return json(r);
     }
 
+    if (method !== 'GET') return fail('method not allowed', 405);
     return fail('not found', 404);
   } catch (err) {
     console.error('API error:', err && err.message ? err.message : err);
@@ -279,9 +446,15 @@ export async function handleRequest(request, env = {}) {
   }
 }
 
+// 其他 route 未命中：非 GET → 405，否則 404
 export default {
   async fetch(request, env, ctx) {
     return handleRequest(request, env, ctx);
+  },
+  // Phase 4：新聞 cron（每 2 小時）
+  async scheduled(event, env, ctx) {
+    const out = await runNewsPipeline(env);
+    console.log('news pipeline:', JSON.stringify(out));
   },
 };
 

@@ -228,6 +228,253 @@ ARCH.stall = (b, item, isl) => {
   b.push('cone', 0.36, 0.90, 0, 0.18, 0.16, 0.18, PAL.yellow, 0, 0, 0, item, isl);
 };
 
+/* ---------- 香港特殊建築系列（unit space：底面 ±0.5、高 0–1.5） ---------- */
+const HK = {
+  tramGreen: 0x2e6a42, tramDark: 0x16382a, starGreen: 0x1e6b4f,
+  tongPink: 0xe8b4a0, tongTeal: 0x8fbfc9, tongCream: 0xf3e3b8,
+  templeRed: 0x9e2f2f, gold: 0xd4af37, pawnGreen: 0x1e4d3b,
+  estateGrey: 0xc8c4bc, jockeyBlue: 0x2e5fa3, cinemaPurple: 0x7b4f9e,
+  neonPink: 0xff6f91, neonYellow: 0xffe066
+};
+
+/* 叮叮電車（雙層） */
+ARCH.tram = (b, item, isl) => {
+  b.push('rbox', 0, 0.08, 0, 1.55, 0.16, 0.80, HK.tramDark, 0, 0, 0, item, isl);          // 底盤
+  for (const [x, z] of [[-0.55, 0.30], [0.55, 0.30], [-0.55, -0.30], [0.55, -0.30]])
+    b.push('box', x, 0.025, z, 0.20, 0.12, 0.22, 0x111111, 0, 0, 0, item, isl);            // 車輪
+  b.push('rbox', 0, 0.33, 0, 1.45, 0.34, 0.72, HK.tramGreen, 0, 0, 0, item, isl);          // 下層車身
+  b.push('glowbox', 0, 0.38, 0.37, 1.30, 0.10, 0.04, PAL.win, 0, 0, 0, item, isl);          // 下層窗帶
+  b.push('glowbox', 0, 0.44, -0.37, 1.30, 0.10, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.62, 0, 1.35, 0.30, 0.66, HK.tramGreen, 0, 0, 0, item, isl);          // 上層車身
+  b.push('glowbox', 0, 0.66, 0.34, 1.20, 0.10, 0.04, PAL.win, 0, 0, 0, item, isl);          // 上層窗帶
+  b.push('glowbox', 0, 0.72, -0.34, 1.20, 0.10, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.82, 0, 1.42, 0.08, 0.74, HK.tramDark, 0, 0, 0, item, isl);           // 車頂
+  b.push('cylinder', 0, 0.92, 0, 0.05, 0.18, 0.05, 0x444444, 0, 0, 0, item, isl);           // 集電弓
+  b.push('glowsphere', -0.68, 0.36, 0, 0.13, 0.13, 0.13, PAL.yellow, 0, 0, 0, item, isl);   // 頭燈
+  b.push('glowsphere', 0.68, 0.36, 0, 0.13, 0.13, 0.13, PAL.yellow, 0, 0, 0, item, isl);
+  b.push('box', -0.62, 0.66, 0, 0.08, 0.30, 0.10, HK.gold, 0, 0, 0, item, isl);             // 路線牌
+};
+
+/* 天星碼頭 */
+ARCH.starferry = (b, item, isl) => {
+  b.push('rbox', 0, 0.06, 0, 1.60, 0.12, 1.00, PAL.stone, 0, 0, 0, item, isl);             // 平台
+  b.push('rbox', 0, 0.42, 0, 0.80, 0.60, 0.90, 0xe8e2d4, 0, 0, 0, item, isl);              // 主樓
+  b.push('glowbox', 0, 0.50, 0.46, 0.60, 0.12, 0.04, PAL.win, 0, 0, 0, item, isl);          // 窗帶
+  b.push('glowbox', 0, 0.60, 0.46, 0.60, 0.12, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.82, 0, 0.96, 0.34, 1.04, HK.starGreen, 0, 0, 0, item, isl);           // 綠色塔樓
+  b.push('hip', 0, 1.06, 0, 1.10, 0.26, 1.18, 0x14523c, 0, 0, 0, item, isl);                // 塔頂
+  b.push('cylinder', 0, 1.26, 0, 0.10, 0.22, 0.10, 0x14523c, 0, 0, 0, item, isl);           // 鐘塔
+  b.push('sphere', 0, 1.42, 0, 0.16, 0.16, 0.16, HK.gold, 0, 0, 0, item, isl);              // 塔尖金球
+  b.push('glowsphere', 0, 0.92, 0.53, 0.12, 0.12, 0.12, PAL.night, 0, 0, 0, item, isl);     // 站名牌燈
+  b.push('box', 0, 0.24, 0.51, 0.90, 0.10, 0.05, HK.starGreen, 0, 0, 0, item, isl);         // 站名橫匾
+  b.push('rbox', -0.95, 0.20, 0, 0.10, 0.30, 0.85, PAL.wood, 0, 0, 0, item, isl);           // 登船橋欄
+  b.push('rbox', 0.95, 0.20, 0, 0.10, 0.30, 0.85, PAL.wood, 0, 0, 0, item, isl);
+};
+
+/* 唐樓（連騎樓） */
+ARCH.tonglau = (b, item, isl) => {
+  b.push('rbox', 0, 0.28, 0, 1.20, 0.56, 1.05, HK.tongCream, 0, 0, 0, item, isl);          // 主樓
+  for (let i = 0; i < 3; i++) {                                                            // 3 層窗
+    const y = 0.16 + i * 0.20;
+    b.push('glowbox', -0.34, y, 0.53, 0.26, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+    b.push('glowbox', 0.34, y, 0.53, 0.26, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+    b.push('glowbox', -0.34, y, -0.53, 0.26, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+    b.push('glowbox', 0.34, y, -0.53, 0.26, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+  }
+  b.push('rbox', 0, 0.62, 0, 1.28, 0.10, 1.12, HK.tongPink, 0, 0, 0, item, isl);           // 簷篷（騎樓頂）
+  b.push('rbox', 0, 0.10, 0.10, 1.18, 0.20, 0.20, PAL.stone, 0, 0, 0, item, isl);           // 騎樓底
+  for (const x of [-0.42, 0, 0.42]) b.push('box', x, 0.24, 0.10, 0.10, 0.44, 0.10, 0xcfc6b8, 0, 0, 0, item, isl);  // 騎樓柱
+  b.push('rbox', 0, 0.72, 0, 0.34, 0.14, 0.34, PAL.stone, 0, 0, 0, item, isl);             // 天台水缸
+  b.push('box', 0, 0.86, 0.30, 0.50, 0.04, 0.04, 0x777777, 0, 0, 0, item, isl);            // 晾衫架
+  b.push('box', -0.55, 0.40, 0, 0.06, 0.30, 0.06, HK.tongTeal, 0, 0, 0, item, isl);        // 外牆色條
+  b.push('box', 0.55, 0.40, 0, 0.06, 0.30, 0.06, HK.tongPink, 0, 0, 0, item, isl);
+};
+
+/* 公屋高塔（井字型） */
+ARCH.estate = (b, item, isl) => {
+  b.push('rbox', 0, 0.78, 0, 1.05, 1.56, 1.05, HK.estateGrey, 0, 0, 0, item, isl);         // 主塔
+  for (let i = 0; i < 8; i++) {                                                            // 層窗
+    const y = 0.14 + i * 0.17;
+    b.push('glowbox', 0, y, 0.53, 0.70, 0.08, 0.03, PAL.win, 0, 0, 0, item, isl);
+    b.push('glowbox', 0, y, -0.53, 0.70, 0.08, 0.03, PAL.win, 0, 0, 0, item, isl);
+  }
+  for (const [x, z] of [[0.52, 0.52], [-0.52, 0.52], [0.52, -0.52], [-0.52, -0.52]]) {    // 井字四角欄杆
+    b.push('box', x, 0.80, z, 0.16, 1.60, 0.16, 0x9a958d, 0, 0, 0, item, isl);
+    b.push('glowbox', x, 0.85, z, 0.10, 0.30, 0.10, PAL.win, 0, 0, 0, item, isl);
+  }
+  b.push('rbox', 0, 1.60, 0, 1.16, 0.10, 1.16, 0x8b857c, 0, 0, 0, item, isl);              // 天台
+  b.push('cylinder', 0.30, 1.76, 0.30, 0.16, 0.26, 0.16, 0x777777, 0, 0, 0, item, isl);    // 水缸
+  b.push('cylinder', 0, 1.86, 0, 0.03, 0.30, 0.03, 0x555555, 0, 0, 0, item, isl);          // 天線
+  b.push('rbox', 0, 0.06, 0.62, 1.10, 0.12, 0.30, PAL.teal, 0, 0, 0, item, isl);            // 入口雨棚
+  b.push('box', 0, 0.14, 0.62, 0.70, 0.16, 0.06, 0x7a746c, 0, 0, 0, item, isl);            // 入口
+};
+
+/* 茶餐廳 */
+ARCH.chaChaan = (b, item, isl) => {
+  b.push('rbox', 0, 0.24, 0, 0.95, 0.48, 0.85, 0x3d6b8f, 0, 0, 0, item, isl);              // 藍色主體
+  b.push('glowbox', 0, 0.30, 0.43, 0.60, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.52, 0, 1.05, 0.10, 0.95, 0x2f4f6e, 0, 0, 0, item, isl);              // 屋頂
+  b.push('box', 0, 0.44, 0.52, 0.92, 0.08, 0.06, HK.neonPink, 0, 0, 0, item, isl);          // 霓虹招牌底
+  b.push('glowbox', 0, 0.44, 0.55, 0.80, 0.06, 0.03, HK.neonPink, 0, 0, 0, item, isl);      // 霓虹光管
+  b.push('glowbox', 0.30, 0.44, 0.55, 0.18, 0.06, 0.03, HK.neonYellow, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.12, 0.43, 0.70, 0.10, 0.06, PAL.wood, 0, 0, 0, item, isl);             // 卡位
+  b.push('rbox', 0.30, 0.20, 0, 0.40, 0.05, 0.50, HK.tongCream, 0, 0, 0, item, isl);        // 枱
+  b.push('cylinder', 0.30, 0.30, 0, 0.08, 0.22, 0.08, PAL.stone, 0, 0, 0, item, isl);       // 奶茶杯
+  b.push('sphere', 0.30, 0.35, 0, 0.07, 0.05, 0.07, 0x7a5230, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.30, -0.20, 0.05, 0.46, 0.05, PAL.wood, 0, 0, 0, item, isl);       // 吊扇柱
+  b.push('torus', 0, 0.34, -0.20, 0.28, 0.28, 0.28, 0x8a8a8a, Math.PI / 2, 0, 0, item, isl);
+};
+
+/* 濕貨街市 */
+ARCH.market = (b, item, isl) => {
+  b.push('rbox', 0, 0.04, 0, 1.10, 0.08, 0.90, PAL.stone, 0, 0, 0, item, isl);             // 地面
+  for (let i = 0; i < 3; i++) {
+    const x = -0.34 + i * 0.34;
+    b.push('rbox', x, 0.22, 0, 0.28, 0.30, 0.60, 0xdde3d0, 0, 0, 0, item, isl);            // 檔口
+    b.push('box', x, 0.10, 0.30, 0.26, 0.04, 0.20, PAL.wood, 0, 0, 0, item, isl);           // 檯
+    b.push('sphere', x - 0.08, 0.38, 0.10, 0.14, 0.14, 0.14, 0xea6b3a, 0, 0, 0, item, isl); // 番茄
+    b.push('sphere', x + 0.08, 0.38, -0.10, 0.12, 0.12, 0.12, 0x8ab84f, 0, 0, 0, item, isl); // 菜
+  }
+  b.push('cone', 0, 0.42, 0, 1.30, 0.18, 1.10, HK.neonPink, 0, 0, 0, item, isl);            // 紅帳篷
+  b.push('cone', 0, 0.46, 0, 1.16, 0.18, 0.96, 0xf5e9d0, 0, 0, 0, item, isl);              // 白帳篷
+  b.push('glowsphere', -0.46, 0.18, 0.36, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, item, isl); // 吊燈
+  b.push('glowsphere', 0.46, 0.18, 0.36, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, item, isl);
+  b.push('glowsphere', 0, 0.18, -0.40, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, item, isl);
+};
+
+/* 文武廟（中式廟宇） */
+ARCH.temple = (b, item, isl) => {
+  b.push('rbox', 0, 0.06, 0, 1.20, 0.12, 1.00, PAL.stone, 0, 0, 0, item, isl);             // 平台
+  b.push('rbox', 0, 0.40, 0, 0.95, 0.68, 0.90, HK.templeRed, 0, 0, 0, item, isl);          // 主殿
+  b.push('glowbox', 0, 0.46, 0.46, 0.50, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('hip', 0, 0.82, 0, 1.35, 0.34, 1.30, 0x7a2020, 0, 0, 0, item, isl);               // 大歇山頂
+  b.push('hip', 0, 1.02, 0, 0.85, 0.22, 0.80, 0x8e2a2a, 0, 0, 0, item, isl);               // 上層頂
+  b.push('torus', -0.48, 0.92, 0.42, 0.10, 0.10, 0.10, HK.gold, 0, 0, 0, item, isl);        // 屋脊翹角
+  b.push('torus', 0.48, 0.92, 0.42, 0.10, 0.10, 0.10, HK.gold, 0, 0, 0, item, isl);
+  b.push('torus', -0.48, 0.92, -0.42, 0.10, 0.10, 0.10, HK.gold, 0, 0, 0, item, isl);
+  b.push('torus', 0.48, 0.92, -0.42, 0.10, 0.10, 0.10, HK.gold, 0, 0, 0, item, isl);
+  b.push('sphere', 0, 1.10, 0, 0.10, 0.10, 0.10, HK.gold, 0, 0, 0, item, isl);              // 寶頂
+  b.push('box', 0, 0.20, 0.46, 0.34, 0.28, 0.05, 0x5e1616, 0, 0, 0, item, isl);            // 大門
+  b.push('rbox', 0, 0.20, 0.55, 0.70, 0.06, 0.14, PAL.wood, 0, 0, 0, item, isl);            // 門檻
+  b.push('cylinder', -0.55, 0.20, 0.40, 0.11, 0.22, 0.11, 0x9aa4a8, 0, 0, 0, item, isl);   // 石鼓
+  b.push('cylinder', 0.55, 0.20, 0.40, 0.11, 0.22, 0.11, 0x9aa4a8, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 0.10, -0.35, 0.18, 0.08, 0.18, PAL.stone, 0, 0, 0, item, isl);      // 香爐
+  b.push('glowsphere', 0, 0.20, -0.35, 0.10, 0.10, 0.10, 0xff9d5c, 0, 0, 0, item, isl);    // 香火
+  b.push('cylinder', -0.35, 0.55, 0, 0.03, 0.50, 0.03, 0x8a6b4a, 0, 0, 0, item, isl);      // 香柱
+  b.push('cylinder', 0.35, 0.55, 0, 0.03, 0.50, 0.03, 0x8a6b4a, 0, 0, 0, item, isl);
+  b.push('glowsphere', -0.35, 0.85, 0, 0.08, 0.08, 0.08, 0xffb066, 0, 0, 0, item, isl);    // 香火頭
+  b.push('glowsphere', 0.35, 0.85, 0, 0.08, 0.08, 0.08, 0xffb066, 0, 0, 0, item, isl);
+};
+
+/* 當鋪（蝠鼠吊金錢） */
+ARCH.pawnshop = (b, item, isl) => {
+  b.push('rbox', 0, 0.30, 0, 0.95, 0.60, 0.85, HK.pawnGreen, 0, 0, 0, item, isl);          // 樓身
+  b.push('glowbox', 0, 0.36, 0.43, 0.55, 0.12, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.66, 0, 1.05, 0.12, 0.95, 0x153c2e, 0, 0, 0, item, isl);              // 屋頂
+  b.push('box', 0, 0.56, 0.50, 0.88, 0.24, 0.08, 0x102e22, 0, 0, 0, item, isl);            // 大招牌
+  b.push('torus', 0, 0.60, 0.55, 0.34, 0.34, 0.34, HK.gold, 0, 0, 0, item, isl);            // 金錢圓
+  b.push('cylinder', 0, 0.60, 0.55, 0.14, 0.05, 0.14, HK.gold, 0, 0, 0, item, isl);         // 金錢內芯
+  b.push('cone', -0.30, 0.72, 0.55, 0.22, 0.16, 0.12, 0x222222, 0, 0.6, 0, item, isl);      // 蝠翼
+  b.push('cone', 0.30, 0.72, 0.55, 0.22, 0.16, 0.12, 0x222222, 0, -0.6, 0, item, isl);
+  b.push('sphere', 0, 0.68, 0.55, 0.12, 0.12, 0.12, 0x222222, 0, 0, 0, item, isl);          // 蝠身
+  b.push('glowbox', 0, 0.20, 0.43, 0.34, 0.26, 0.04, 0x3a2a10, 0, 0, 0, item, isl);        // 木閘
+  b.push('glowsphere', -0.40, 0.40, 0, 0.10, 0.10, 0.10, HK.neonPink, 0, 0, 0, item, isl); // 霓虹燈
+  b.push('glowsphere', 0.40, 0.40, 0, 0.10, 0.10, 0.10, HK.neonPink, 0, 0, 0, item, isl);
+};
+
+/* 金融天際線（中銀鋸齒風格） */
+ARCH.skyscraper = (b, item, isl) => {
+  b.push('rbox', 0, 0.72, 0, 0.85, 1.44, 0.85, 0xb9b6ae, 0, 0, 0, item, isl);              // 主塔
+  for (let i = 0; i < 10; i++) {
+    const y = 0.10 + i * 0.14;
+    b.push('glowbox', 0, y, 0.43, 0.68, 0.05, 0.03, PAL.glass, 0, 0, 0, item, isl);
+    b.push('glowbox', 0, y, -0.43, 0.68, 0.05, 0.03, PAL.glass, 0, 0, 0, item, isl);
+  }
+  for (const [x, z] of [[0.42, 0.42], [-0.42, 0.42], [0.42, -0.42], [-0.42, -0.42]]) {    // 四角鋸齒
+    b.push('prism', x, 1.12, z, 0.34, 0.70, 0.34, 0x9a978e, 0, 0.4, 0, item, isl);
+    b.push('glowbox', x, 1.16, z, 0.16, 0.12, 0.16, PAL.glass, 0, 0, 0, item, isl);
+  }
+  b.push('rbox', 0, 1.50, 0, 0.95, 0.12, 0.95, 0x8a8780, 0, 0, 0, item, isl);              // 頂層
+  b.push('cylinder', 0, 1.70, 0, 0.035, 0.34, 0.035, 0x555555, 0, 0, 0, item, isl);         // 天線
+  b.push('glowsphere', 0, 1.72, 0, 0.08, 0.08, 0.08, 0xff4444, 0, 0, 0, item, isl);         // 紅燈
+  b.push('rbox', 0, 0.10, 0.50, 0.70, 0.12, 0.16, PAL.teal, 0, 0, 0, item, isl);            // 大堂
+};
+
+/* 舊戲院 */
+ARCH.cinema = (b, item, isl) => {
+  b.push('rbox', 0, 0.26, 0, 1.10, 0.52, 0.90, 0xd9d2c4, 0, 0, 0, item, isl);              // 主樓
+  b.push('glowbox', 0, 0.34, 0.46, 0.70, 0.14, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.60, 0, 1.20, 0.16, 1.00, HK.cinemaPurple, 0, 0, 0, item, isl);       // 屋頂橫條
+  b.push('box', 0, 0.58, 0.54, 1.00, 0.12, 0.08, HK.neonPink, 0, 0, 0, item, isl);          // 巨型霓虹招牌
+  b.push('glowbox', 0, 0.58, 0.57, 0.92, 0.07, 0.03, HK.neonPink, 0, 0, 0, item, isl);      // 光管
+  b.push('glowbox', 0.32, 0.58, 0.57, 0.22, 0.07, 0.03, HK.neonYellow, 0, 0, 0, item, isl);
+  b.push('cone', 0, 0.34, 0.55, 0.80, 0.10, 0.46, 0x8f2d3f, 0, 0, 0, item, isl);           // 入口帳篷
+  b.push('cone', 0, 0.36, 0.55, 0.68, 0.10, 0.38, 0xf5e9d0, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.20, 0.60, 0.30, 0.26, 0.06, 0x5e1616, 0, 0, 0, item, isl);            // 大門
+  b.push('glowsphere', -0.42, 0.30, 0.50, 0.09, 0.09, 0.09, PAL.night, 0, 0, 0, item, isl);
+  b.push('glowsphere', 0.42, 0.30, 0.50, 0.09, 0.09, 0.09, PAL.night, 0, 0, 0, item, isl);
+};
+
+/* 馬會投注站 */
+ARCH.jockey = (b, item, isl) => {
+  b.push('rbox', 0, 0.22, 0, 0.95, 0.44, 0.80, HK.jockeyBlue, 0, 0, 0, item, isl);         // 主體
+  b.push('glowbox', 0, 0.28, 0.41, 0.60, 0.12, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.48, 0, 1.05, 0.08, 0.90, 0xf0f0f0, 0, 0, 0, item, isl);              // 白色楣
+  b.push('rbox', 0, 0.54, 0, 1.10, 0.06, 0.96, HK.jockeyBlue, 0, 0, 0, item, isl);          // 藍色屋頂
+  b.push('glowbox', 0, 0.44, 0.47, 0.80, 0.06, 0.04, 0xffffff, 0, 0, 0, item, isl);         // 招牌白字
+  b.push('glowbox', 0.25, 0.44, 0.47, 0.30, 0.06, 0.04, HK.neonYellow, 0, 0, 0, item, isl);
+  b.push('torus', 0.30, 0.24, 0, 0.20, 0.20, 0.20, 0x8f8f8f, 0, Math.PI / 2, 0, item, isl); // 馬蹄抽象
+  b.push('box', 0.30, 0.14, 0, 0.16, 0.06, 0.06, PAL.wood, 0, 0, 0, item, isl);
+  b.push('glowsphere', -0.40, 0.30, 0, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, item, isl);
+  b.push('glowsphere', 0.40, 0.30, 0, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, item, isl);
+};
+
+/* 麻雀館 */
+ARCH.mahjong = (b, item, isl) => {
+  b.push('rbox', 0, 0.30, 0, 0.95, 0.60, 0.85, 0x5e2d33, 0, 0, 0, item, isl);              // 深紅樓身
+  b.push('glowbox', 0, 0.36, 0.43, 0.55, 0.12, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('rbox', 0, 0.66, 0, 1.05, 0.12, 0.95, 0x3e1d21, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.56, 0.50, 0.88, 0.22, 0.08, 0x2a1013, 0, 0, 0, item, isl);            // 大招牌
+  b.push('glowbox', 0, 0.56, 0.53, 0.78, 0.08, 0.04, HK.neonPink, 0, 0, 0, item, isl);      // 霓虹
+  b.push('glowbox', 0.22, 0.56, 0.53, 0.30, 0.08, 0.04, HK.neonYellow, 0, 0, 0, item, isl);
+  for (let i = 0; i < 4; i++) {                                                            // 麻將粒
+    const x = -0.24 + i * 0.16;
+    b.push('rbox', x, 0.42, 0, 0.11, 0.14, 0.08, 0x1a5c3a, 0, 0, 0, item, isl);
+    b.push('box', x, 0.42, 0, 0.07, 0.06, 0.045, 0xe8e8e8, 0, 0, 0, item, isl);
+  }
+  b.push('glowsphere', -0.40, 0.40, 0, 0.10, 0.10, 0.10, HK.neonPink, 0, 0, 0, item, isl);
+  b.push('glowsphere', 0.40, 0.40, 0, 0.10, 0.10, 0.10, HK.neonYellow, 0, 0, 0, item, isl);
+};
+
+/* 九廣鐵路站亭 */
+ARCH.kcr = (b, item, isl) => {
+  b.push('rbox', 0, 0.14, 0, 1.10, 0.28, 0.55, PAL.stone, 0, 0, 0, item, isl);             // 月台
+  b.push('rbox', 0, 0.46, 0, 0.80, 0.36, 0.60, 0x35685f, 0, 0, 0, item, isl);              // 站亭
+  b.push('glowbox', 0, 0.52, 0.31, 0.55, 0.12, 0.04, PAL.win, 0, 0, 0, item, isl);
+  b.push('hip', 0, 0.70, 0, 1.00, 0.22, 0.80, 0x2a534b, 0, 0, 0, item, isl);               // 金字頂
+  b.push('cylinder', -0.50, 0.30, 0, 0.05, 0.34, 0.05, 0xf0f0f0, 0, 0, 0, item, isl);      // 白柱
+  b.push('cylinder', 0.50, 0.30, 0, 0.05, 0.34, 0.05, 0xf0f0f0, 0, 0, 0, item, isl);
+  b.push('box', 0, 0.60, 0.34, 0.60, 0.06, 0.05, 0xf0f0f0, 0, 0, 0, item, isl);            // 站名牌
+  b.push('cylinder', 0.36, 0.84, 0, 0.06, 0.18, 0.06, 0x2a534b, 0, 0, 0, item, isl);       // 鐘樓
+  b.push('cylinder', 0.36, 0.94, 0, 0.30, 0.05, 0.30, 0xf0f0f0, 0, 0, 0, item, isl);       // 鐘面
+  b.push('glowsphere', -0.30, 0.30, 0, 0.08, 0.08, 0.08, PAL.night, 0, 0, 0, item, isl);
+  b.push('glowsphere', 0.30, 0.30, 0, 0.08, 0.08, 0.08, PAL.night, 0, 0, 0, item, isl);
+};
+
+/* 燈塔（紅白） */
+ARCH.lighthouse = (b, item, isl) => {
+  b.push('cylinder', 0, 0.06, 0, 0.90, 0.12, 0.90, PAL.stone, 0, 0, 0, item, isl);         // 基座
+  b.push('cylinder', 0, 0.60, 0, 0.34, 1.10, 0.34, 0xf0f0f0, 0, 0, 0, item, isl);          // 白塔
+  b.push('cylinder', 0, 0.75, 0, 0.38, 0.22, 0.38, 0xc0392b, 0, 0, 0, item, isl);          // 紅帶
+  b.push('cylinder', 0, 1.00, 0, 0.38, 0.20, 0.38, 0xc0392b, 0, 0, 0, item, isl);
+  b.push('cylinder', 0, 1.24, 0, 0.44, 0.30, 0.44, 0x222222, 0, 0, 0, item, isl);          // 燈室
+  b.push('glowsphere', 0, 1.28, 0, 0.22, 0.22, 0.22, PAL.night, 0, 0, 0, item, isl);        // 燈光
+  b.push('cone', 0, 1.46, 0, 0.28, 0.16, 0.28, 0xc0392b, 0, 0, 0, item, isl);              // 塔頂
+  b.push('rbox', 0, 0.14, 0.40, 0.70, 0.06, 0.16, PAL.wood, 0, 0, 0, item, isl);           // 望台欄
+  b.push('cylinder', -0.55, 0.10, 0, 0.05, 0.18, 0.05, 0x555555, 0, 0, 0, item, isl);
+  b.push('cylinder', 0.55, 0.10, 0, 0.05, 0.18, 0.05, 0x555555, 0, 0, 0, item, isl);
+};
+
 /* ---------- 樹種（每島不同） ---------- */
 function treeSpecies(b, sp, x, y, z, s, item, isl) {
   const P = (k, px, py, pz, sx, sy, sz, c) => b.push(k, x + px * s, y + py * s, z + pz * s, sx * s, sy * s, sz * s, c, 0, 0, 0, item, isl);
@@ -378,6 +625,28 @@ function buildIsland(I) {
 }
 ISLANDS.forEach(buildIsland);
 
+/* ---------- 香港小店裝飾（每島 2–3 座，唔入細項卡） ---------- */
+{
+  const DECOR_KINDS = ['chaChaan', 'pawnshop', 'mahjong', 'cinema', 'jockey', 'market', 'kcr', 'lighthouse'];
+  for (const I of ISLANDS) {
+    const isl = ISL_NODES[I.id];
+    const n = 2 + Math.floor(RNG() * 2);
+    const used = new Set();
+    for (let i = 0; i < n; i++) {
+      const kind = DECOR_KINDS[Math.floor(RNG() * DECOR_KINDS.length)];
+      if (used.has(kind)) continue;
+      used.add(kind);
+      const a = isl.base + RNG() * TAU;
+      const rr = 4.35 + RNG() * 0.75;                       // 喺 items 環(3.35)同路環(5.8)之間
+      const dx = isl.x + Math.sin(a) * rr, dz = isl.z + Math.cos(a) * rr;
+      const sc = 0.72 + RNG() * 0.35;
+      const b = makeBuilder(new THREE.Vector3(dx, ISL_TOP, dz), sc, RNG() * TAU);
+      b.push('cylinder', 0, 0.02, 0, 1.15, 0.05, 1.15, PAL.ink, 0, 0, 0, null, I.id, true); // 陰影裙邊
+      ARCH[kind](b, null, I.id);
+    }
+  }
+}
+
 /* ---------- bridges (graph edges between islands) ---------- */
 {
   const b = makeBuilder(new THREE.Vector3(0, 0, 0), 1, 0);
@@ -427,8 +696,8 @@ const ITEM_WORLD = {};        // itemId -> {pos: Vector3, isl, scale, rot}
       const a = isl.base + (k / ids.length) * TAU + 0.35;
       const rr = hub ? 3.5 : 3.35;
       const px = isl.x + Math.sin(a) * rr, pz = isl.z + Math.cos(a) * rr;
-      const giant = ['book', 'coin', 'clock', 'globe'].includes(it.model);
-      const scale = giant ? 3.1 : 2.5;
+      const giant = ['book', 'coin', 'clock', 'globe', 'skyscraper', 'estate'].includes(it.model);
+      const scale = giant ? (['skyscraper', 'estate'].includes(it.model) ? 3.6 : 3.1) : 2.5;
       const rot = -a + (giant ? 0 : 0.4);
       const b = makeBuilder(new THREE.Vector3(px, ISL_TOP, pz), scale, rot);
       // 暗色陰影裙邊：1.05× 底座半徑、0.06 厚，避免模型浮喺島面
@@ -463,6 +732,66 @@ for (const kind in KITS) {
   kitMeshes[kind] = mesh;
   scene.add(mesh);
 }
+
+/* ---------- 動態新增（Phase 2/3：server mutation → 即時加建） ---------- */
+// standalone builder：唔用 instanced kit，直接建 Mesh group（新 item 數量少，可接受）
+function standaloneBuilder(origin, scale, rotY) {
+  const group = new THREE.Group();
+  const base = new THREE.Matrix4().compose(
+    origin,
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0)),
+    new THREE.Vector3(scale, scale, scale));
+  return {
+    push(kind, x, y, z, sx, sy, sz, color, rx = 0, ry = 0, rz = 0, item = null, island = null, small = false) {
+      const j = 1 + (Math.random() * 2 - 1) * 0.0072;
+      const local = new THREE.Matrix4().compose(
+        new THREE.Vector3(x, y, z),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)),
+        new THREE.Vector3(sx * j, sy * j, sz * j));
+      const world = base.clone().multiply(local);
+      const mat = KITS[kind].glow
+        ? new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0, emissive: new THREE.Color(color), emissiveIntensity: 0.9 })
+        : new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.78, metalness: 0 });
+      const mesh = new THREE.Mesh(KITS[kind].geo, mat);
+      mesh.matrix.copy(world);
+      mesh.matrixAutoUpdate = false;
+      mesh.castShadow = !KITS[kind].glow;
+      if (item) mesh.userData = { pick: 'item', id: item };
+      if (island) mesh.userData = { pick: 'island', id: island };
+      group.add(mesh);
+    }
+  };
+}
+window.__addItemMesh = function (item) {
+  const isl = ISL_NODES[item.islandId];
+  if (!isl || !ARCH[item.model]) return false;
+  const ids = Object.keys(ITEMS).filter(k => ITEMS[k].isl === item.islandId);
+  const a = isl.base + (0.35 + (ids.length % 6) * 0.9 + RNG() * 0.25);
+  const rr = 3.35;
+  const px = isl.x + Math.sin(a) * rr, pz = isl.z + Math.cos(a) * rr;
+  const b = standaloneBuilder(new THREE.Vector3(px, ISL_TOP, pz), 2.5, -a + 0.4);
+  b.push('cylinder', 0, 0.02, 0, 1.22, 0.06, 1.22, PAL.ink, 0, 0, 0, item.id, item.islandId);
+  ARCH[item.model](b, item.id, item.islandId);
+  ITEM_WORLD[item.id] = { pos: new THREE.Vector3(px, ISL_TOP, pz), isl: item.islandId, scale: 2.5, rot: -a + 0.4 };
+  scene.add(b.group);
+  return true;
+};
+window.__addIsland = function (isl) {
+  if (ISL_BY_ID[isl.id] || ISL_NODES[isl.id]) return false;
+  // 新聞島：外圈 r=32，角度避開現有島（唔好同 hub/theme 島重疊）
+  const taken = new Set(ISLANDS.filter(I => I.ang !== null).map(I => I.ang));
+  let ang = (RNG() * 360);
+  for (let i = 0; i < 24 && taken.has(ang); i++) ang = (ang + 15) % 360;
+  const r = isl.radius || 32;
+  ISL_POS[isl.id] = new THREE.Vector2(Math.cos(ang * Math.PI / 180) * r, Math.sin(ang * Math.PI / 180) * r);
+  isl.ang = ang;
+  ISL_BY_ID[isl.id] = isl;
+  ISLANDS.push(isl);
+  const g = buildIsland(isl);
+  // 新聞島地標細項（server 已建立對應 item；buildIsland 唔起 items，由 ITEMS 放置邏輯做）
+  return true;
+};
+window.__islandIds = () => Object.keys(ISL_NODES);
 
 /* ---------- 路燈光池（加法混合） ---------- */
 const lampPools = [];
