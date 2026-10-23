@@ -1,11 +1,27 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "policy-islands",
+  "main": "src/worker/index.js",
   "compatibility_date": "2026-10-19",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "directory": "."
-  }
+    "directory": "dist",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WORLD_ROOM",
+        "class_name": "WorldRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["WorldRoom"]
+    }
+  ]
 }

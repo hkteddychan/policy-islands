@@ -455,17 +455,37 @@ score = 0.3·(命中主題關鍵詞數 / 3)
 
 ### 6.5 新島生成規則（要同 3D 場景一致）
 
-現有 `ISL_R = 22`，7 座島排喺半徑 22 嘅圓上。新島無處放 —— 所以：
+現有幾何（實測 `src/`）：`ISL_R = 22`（6 座環島中心喺 r=22）、`ISL_RAD = 7.4`（六角島半徑）→ **現有島群外緣 r = 29.4**。地形盆地喺 `smoothstep(28, 38)` 放開、環狀山由 `smoothstep(40, 55)` 開始。
 
-- 新島**唔加入主環**。改用「外圈衛星島」：半徑 `32 + 6×n`（n = 0,1,2…），角度均分避開現有 6 個方向（`-90, -30, 30, 90, 150, 210`）。
-- 新島隨機揀一個現有 6 主題（`theme`），但顏色/icon 用新聞主題變體（例如交通新聞新島 → 同一 coral 色 + 🚌 icon + 「交通」標題變體）。
-- 新島自動連 1-2 條 flow 去最相關嘅現有島（同 theme 或 score 次高主題），`kind='pending'`（合理 — 未經人手核實）。
-- 每座新島自動生 1-3 個 `items`（用現有 archetype model key，例如 `clinic`/`school`/`hall`），名稱/描述來自新聞標題 + AI 摘要。
+**結論：3D 場景幾乎冇位放新島**（新島中心安全區只有 r ≈ 30–34，最多 1-2 座）。所以：
 
-> ⚠️ **實作注意**：`src/01-data.js` 嘅 `ISL_POS` 用 `ISL_R = 22` 硬編碼，島角度來自 `ISLANDS[].ang`。新島一定要：
-> 1. 唔改 `ISLANDS` / `ITEMS` / `FLOWS` 嘅**結構名稱**（AGENTS.md 規則 7）。
-> 2. 喺 boot 時將 server 資料 merge 入去 — 即 `const ISLANDS = [...SEED_ISLANDS, ...serverIslands]`，並且 `ISL_POS` 計算要多處理「無 `ang` 但有 `radius`」嘅情況。
-> 3. 地形的「城市盆地 r<32」同「山帶 r≥38」假設（SPEC-v2 §1.1）會被外圈新島撞到 → 新島半徑要夾喺 32–37 之間，或者同步調整地形常數。**呢個係前端改動嘅最大風險點**，見 §8 Risk 1。
+**🥇 推薦方案：新島主要存在於 2D 地圖視圖（新增），3D 只保留核心 7 島 + 可選 1-2 座外圈島。**
+
+- 新島唔加入主環（唔改 `ISL_R = 22`、唔改 `ISLANDS[].ang`）。
+- 2D 地圖視圖用圓形 SVG 排版：核心 7 島喺內圈，新聞島喺外圈按 `32 + 7×n` 排列，顏色跟 `theme`。
+- 如果要喺 3D 放最多 1-2 座，中心 r = 31，**並且唔好自動連 flow**（會改 walker 路徑）。
+- 詳細取捨 + 地形常數改法見 **§11 Risk 1**。
+
+**新島內容規則：**
+
+| 欄位 | 值 |
+|---|---|
+| `id` | `news-<YYYYMMDD>-<NN>` |
+| `theme` | 分類結果（交通/教育/醫療/房屋/環境/經濟） |
+| `name_zh` | AI 摘要前 8 字 或 標題前 12 字（去 HTML） |
+| `name_en` | AI 摘要首句 或 英文標題前 40 字 |
+| `icon` / `color` | 跟 `theme`（沿用現有 `PAL` 色票） |
+| `radius` | 2D 地圖用；3D 用固定 7.4 |
+| `origin` | `'news'` |
+| `news_id` | FK → `news_items.id` |
+| `items` | 1-3 個，用現有 archetype `model` key（`clinic`/`school`/`hall`/...），名稱來自 AI 摘要 |
+| `flows` | **Phase 4 先唔自動連**（見 Risk 1 緩解 5） |
+
+> ⚠️ **實作注意**：`AGENTS.md` 規則 7 禁止改 `ISLANDS` / `ITEMS` / `FLOWS` / `ISL_POS` / `ISL_NODES` / `ITEM_WORLD` / `FLOW_OBJ` 嘅**結構名稱**。要用擴展模式：
+> ```js
+> const ISLANDS = [...SEED_ISLANDS, ...(serverIslands || [])];
+> ```
+> 而 `ISL_POS` 嘅計算要同時處理「有 `ang` 嘅環島」同「有 `radius` 嘅衛星島」兩種情況。
 
 ---
 
@@ -498,7 +518,7 @@ score = 0.3·(命中主題關鍵詞數 / 3)
 
 | 資源 | 名稱 | 類型 | 備註 |
 |---|---|---|---|
-| Worker | `policy-islands` | Workers (Static Assets) | `assets.directory: "./dist"`, `run_worker_first: ["/api/*", "/ws"]` |
+| Worker | `policy-islands` | Workers (Static Assets) | `assets.directory: "./cf-dist"`（`cf-dist/` 已存在並有 `index.html`），`run_worker_first: ["/api/*", "/ws"]` |
 | Durable Object | `WorldRoom` | DO, `storage: "sqlite"` | 單一房間 |
 | D1 | `policy-islands-main` | D1 | `--location=apac`（用戶在 HK）。⚠️ 實測：現有 wrangler 只接受 `weur / eeur / apac / oc / wnam / enam`（`wrangler d1 create --help`）；`apac-ne` / `apac-se` 只係出現喺 docs 變更 diff，未喺呢版 wrangler 生效 → **用 `apac`**。1 個 database 就夠，唔好過度分片 |
 | Workers KV | `news-cache` | KV | 只存 RSS 原文，TTL 6h |
@@ -723,28 +743,53 @@ score = 0.3·(命中主題關鍵詞數 / 3)
 ### 🔴 Risk 1 — 前端「外圈新島」會撞壞現有地形的硬編碼假設
 
 **問題描述：**
-現有 3D 場景有多個「魔法數」綁死喺 7 座島、環半徑 22：
+現有 3D 場景有多個「魔法數」綁死喺 7 座島、環半徑 22。**以下全部係實測 `src/` 出嚟嘅真實常數**：
 
-- `src/01-data.js`: `const ISL_R = 22`，`ISL_POS` 用 `Math.cos(a) * ISL_R` — 位置全部喺 r=22 嘅圓上
-- `src/03-terrain.js`: 地形「城市盆地 r<32」壓平、「山帶 r≥38」抬高 — SPEC-v2 §1.1 明確講「城市周圍 0–32 範圍唔可以有山」
-- `SPEC-v2.md` §0 已記錄咗 6 個「已修嘅 bug」，其中包括「環狀山原本 r=25–50 覆蓋島群 → 推去 r=34–78」
-- `src/05-walkers.js` Dijkstra 沿 `FLOWS` 路徑行，新 flow 令路徑變長、可能穿過新島
-- `src/06-select.js` 標籤避讓（CSS2D）只對 7 個島名 + 3 個 pin 調過
+| 常數 | 值 | 位置 | 意義 |
+|---|---|---|---|
+| `ISL_R` | `22` | `src/01-data.js` | 6 座環島中心喺 r=22 嘅圓上 |
+| `ISL_RAD` | `7.4` | `src/04-buildings.js:3` | 六角島自身半徑（hub = 7.9） |
+| 環島外緣 | `22 + 7.4 = 29.4` | 推算 | 現有島群最外圈 |
+| 城市盆地壓平 | `h -= (1 - smoothstep(28, 38, r)) * 5.0` | `src/03-terrain.js:16` | r<28 全壓落海平面，r=38 完全放開 |
+| 環狀山起點 | `smoothstep(40, 55, r) * 13.0` | `src/03-terrain.js:10` | **r=40 開始有山** |
+| 山帶外沿 | `1 - smoothstep(72, 94, r)` | `src/03-terrain.js:10` | r>94 山帶結束 |
+| fbm 細節起動 | `smoothstep(32, 46, r)` | `src/03-terrain.js:12` | r=32 開始有起伏 |
+| 鏡頭側壓低 | `camSide * smoothstep(20, 46, r) * 5.0` | `src/03-terrain.js:19` | +z 側地形下沉 |
 
-**一旦新島放喺 r=32-37，就會**：
-1. 落喺「山帶 r≥38」嘅邊緣，視覺上撞山
-2. 令地形盆地邊界（r=32）失效
-3. `ISL_NODES` / `FLOW_OBJ` 路徑重新計算，改變 108 個 walker 嘅路線
-4. CSS2D 標籤在 11-13 座島時會互相重疊
+**幾何衝突（實測計算）：**
+- 現有島群外緣 r = **29.4**。
+- 盆地放開 r = **38**，山帶起點 r = **40**。
+- 一座新衛星島（半徑 7.4）要唔撞現有島，中心至少要 r > 29.4；要唔坐喺山腰，中心 + 7.4 最多到 ~34 → **中心安全區只有 r ≈ 30–34，闊度得 ~4 單位**。
+- 4 單位闊嘅環，扣起每座新島自己佔 7.4 寬 → **最多只能塞得 1-2 座新島**，之後就一定撞山。
 
-**緩解（按順序做）：**
-1. **唔好硬塞新島入主環**。新島用「外圈衛星」半徑 32–37，並且**同步改地形常數**（盆地 → r<38，山帶 → r≥44）—— 但呢個改動會影響現有視覺驗收（SPEC §1.1 要求城市佔畫面 ≥ 22%）。
-2. **替代方案（推薦）：新島唔放喺 3D 場景，而係放喺「地圖視圖」**。加一個 2D minimap / 平面圖 mode（圓形 SVG，7+ 座島），新島喺 2D 圖上可見，3D 主場景維持 7 座核心島 + 最多 2-3 座外圈島。**呢個做法風險最低**，亦最符合「政策地圖」嘅隱喻。
-3. **唔好改 `ISLANDS` / `ITEMS` / `FLOWS` 結構名稱**（AGENTS.md 規則 7）—— 用 `const ISLANDS = [...SEED, ...fromServer]` 嘅擴展模式。
-4. 唔好一開始就自動生成 flow — 讓新島孤立（`kind='pending'` 但數=0），觀察清楚先開。
-5. **驗收保護**：新島功能必須喺**獨立 flag** 後面（`?news=1`），Phase 4 唔好影響預設體驗。SPEC §0 嘅「已實測通過」驗收要重新跑。
+**連鎖後果：**
+1. 新島坐喺 r=30-34 → 會坐喺「盆地放開 r=38」嘅過渡帶，地形唔再平，島嘅六角底座會懸空或半沉。
+2. `src/05-walkers.js` Dijkstra 沿 `FLOWS` 行；新 flow 令路徑變長，可能穿過新島或山帶。
+3. `src/06-select.js` CSS2D 標籤避讓只對 7 個島名 + 3 個 pin 調過；11-13 座島時會互相重疊。
+4. `SPEC-v2.md` §1.1 嘅驗收（城市佔畫面 ≥ 22%、山帶 r≥38、天空 15-30%）會全部要重跑。
 
-**緩解成本**：中（前端 1-2 日 + 重跑視覺驗收）。**呢個係整個計劃最可能爆嘅地方。**
+**緩解（按推薦次序）：**
+
+1. **🥇 新島唔入 3D 主場景 → 改用 2D 地圖視圖（強烈推薦）**
+   加一個圓形 SVG minimap / 平面圖 mode：7 座核心島 + 全部新聞島喺 2D 圖上可見、可點擊、可 tooltip；3D 主場景維持 7 座核心島 + 最多 1-2 座外圈島。
+   - **好處**：零碰撞、零地形改動、零 CSS2D 改動、對應「政策地圖」隱喻、新島數量完全冇上限。
+   - **代價**：新島唔會出現喺 3D 畫面（但需求只係「增加島嘅數量」，2D 圖已經滿足）。
+
+2. **🥈 如果一定要入 3D：擴大地形常數**
+   - 盆地壓平 → `smoothstep(28, 38)` 改成 `smoothstep(38, 52)`；山帶起點 → `smoothstep(52, 70)`；外沿 → `smoothstep(84, 104)`。
+   - 新島中心 r = `38 + 8×n`（n=0,1,2…），可容納 ~4-5 座外圈島。
+   - **代價**：改動 `src/03-terrain.js` 4 個 magic number → 必須重跑 SPEC §1.1 全部視覺驗收（相機距離、地平線、天空比例會全部變）。**呢個係最易做壞視覺嘅路徑。**
+
+3. **🥉 3D 完全唔放新島，最簡單**
+   新島只存在於 D1 + 2D 圖 + sidebar 清單。1 日內完成。
+
+4. **不論邊條路，唔好改 `ISLANDS` / `ITEMS` / `FLOWS` 結構名稱**（`AGENTS.md` 規則 7）—— 用 `const ISLANDS = [...SEED, ...fromServer]` 嘅擴展模式，`ISL_POS` 計算要多處理「無 `ang` 但有 `radius`」嘅情況。
+
+5. **新島唔好自動連 flow**（或者連 0-1 條 `kind='pending'`）。因為 flow 會改 Dijkstra 路徑 → 改 108 個 walker 嘅路線 → 改 walker 動畫。先觀察清楚先開。
+
+6. **新島功能必須喺獨立 flag 後面**（`?news=1` 或 localStorage 開關），Phase 4 唔好影響預設體驗。`SPEC-v2.md` §0 嘅「已實測通過」清單要重新驗證。
+
+**緩解成本**：方案 1 = 低（1 日，只加 UI）；方案 2 = 中（1-2 日 + 重跑視覺驗收）；方案 3 = 最低（0.5 日）。
 
 ---
 
@@ -797,20 +842,83 @@ Workers Free 計劃：100,000 requests/日、**10 ms CPU per request**。D1 rows
 
 ---
 
-## 12. 附錄：立即可做嘅下一步
+## 12. 附錄 A：`wrangler.jsonc` 目標形態（已按本機 wrangler schema 驗證）
 
-1. `git init && git add -A && git commit`（喺 `/opt/data/policy-islands`）— 而家完全冇版本控制
-2. 清理磁碟（98% 已用）
-3. 上 Workers Paid
-4. `wrangler d1 create policy-islands-main --location=apac`
-5. 寫 `migrations/0001_init.sql`（§2.1）
-6. 寫 seed 產生器（Node script 讀 `src/01-data.js` → SQL）
-7. 改 `wrangler.jsonc`：`main` 指向 Worker entry、`assets.directory: "./dist"`、加 `d1_databases` / `durable_objects` / `kv_namespaces` bindings
-8. **改 `build.py` 嘅 `ORDER` 加入 `09-net.js`**（如果做 Phase 2）
+本機 `wrangler` 嘅 `config-schema.json`（`/opt/data/home/.local/lib/node_modules/wrangler/config-schema.json`）已確認以下 key 全部存在：`exports` / `ratelimits` / `durable_objects` / `d1_databases` / `kv_namespaces` / `triggers` / `assets` / `ai` / `queues` / `r2_buckets` / `workflows` / `observability` / `vars`。
+
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "policy-islands",
+  "main": "worker/api.js",              // ← 而家無 `main`，默认用 worker.js
+  "compatibility_date": "2026-10-19",   // 保留；nodejs_compat 由 2026-08-04 起預設開啟
+  "observability": { "enabled": true },
+
+  // 靜態前端（取代 worker.js 內嵌 HTML）
+  "assets": {
+    "directory": "./cf-dist",           // build.py 輸出目標
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none",
+    "run_worker_first": ["/api/*", "/ws"]   // 只呢啲路徑先經 Worker
+  },
+
+  // Durable Object（單一世界房間）
+  "durable_objects": {
+    "bindings": [{ "name": "WORLD_ROOM", "class_name": "WorldRoom" }]
+  },
+  "exports": {
+    "WorldRoom": { "type": "durable-object", "storage": "sqlite" }
+    // ⚠️ `exports` 同 `migrations` 互斥，唔可以兩個都寫
+  },
+
+  // D1（權威資料）
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "policy-islands-main",
+    "database_id": "<uuid>",
+    "migrations_dir": "migrations"
+  }],
+
+  // KV（新聞 cache）
+  "kv_namespaces": [{ "binding": "NEWS_CACHE", "id": "<namespace-id>" }],
+
+  // 排程
+  "triggers": { "crons": ["0 */2 * * *"] },
+
+  // 反濫用（period 只可以是 10 或 60）
+  "ratelimits": [{
+    "name": "MUTATION_LIMIT",
+    "namespace_id": "1001",
+    "simple": { "limit": 5, "period": 60 }
+  }],
+
+  // 可選：Workers AI
+  // "ai": { "binding": "AI" },
+  // 可選：R2
+  // "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "policy-islands-media" }]
+}
+```
+
+**注意：** `exports` 取代舊嘅 `migrations` 陣列（`migrations` 依然支援，但**同一個 Worker 只能二選一**）。DO class 嘅 SQL 用 `ctx.storage.sql`，而 `storage: "sqlite"` 係免費計劃唯一支援嘅 backend。
 
 ---
 
-## 13. 引用來源
+## 13. 附錄 B：立即可做嘅下一步
+
+1. `git init && git add -A && git commit`（喺 `/opt/data/policy-islands`）— 而家完全冇版本控制
+2. 清理磁碟（98% 已用，剩 2.5 GB）
+3. 上 Workers Paid（$5/月）
+4. `wrangler d1 create policy-islands-main --location=apac`
+5. 寫 `migrations/0001_init.sql`（§2.1）
+6. 寫 seed 產生器（Node script 讀 `src/01-data.js` → SQL）
+7. 改 `wrangler.jsonc`（附錄 A）
+8. **改 `build.py` 嘅 `ORDER` 加入 `09-net.js`**（如果做 Phase 2）
+9. `python3 build.py` 確認 `ASSEMBLED ... | 2 JS blocks OK`
+
+---
+
+## 14. 引用來源
 
 所有數字都來自 Cloudflare 官方文件（2026-10-23 抓取）：
 
