@@ -96,6 +96,8 @@ async function main() {
   check('all required tables exist', missing.length === 0, `missing: ${missing.join(', ')}`);
 
   db.exec(seed);
+  // 模擬 WorldRoom 升級邏輯：seed 完成後寫 seed_ver（DO 會用佢決定使唔使再 seed）
+  db.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seed_ver','2')");
   const count = (table) => Number(db.prepare(
     `SELECT COUNT(*) AS n FROM ${table} WHERE deleted_at IS NULL`
   ).get().n);
@@ -112,6 +114,9 @@ async function main() {
 
   const seqRow = db.prepare("SELECT v FROM world_meta WHERE k = 'seq'").get();
   check('world_meta.seq exists', !!seqRow && seqRow.v === '0', JSON.stringify(seqRow));
+  // seed 版本機制（質量 fix：server seed 要跟 src/01-data.js 同步）
+  const seedVerRow = db.prepare("SELECT v FROM world_meta WHERE k = 'seed_ver'").get();
+  check('seed_ver >= 2 (HK items included)', !!seedVerRow && Number(seedVerRow.v) >= 2, JSON.stringify(seedVerRow));
 
   const orphanItems = Number(db.prepare(
     'SELECT COUNT(*) AS n FROM items i LEFT JOIN islands s ON s.id = i.island_id WHERE s.id IS NULL'
@@ -197,6 +202,15 @@ async function main() {
   db.prepare(
     'INSERT INTO mutations (seq, type, payload_json, actor_id, actor_token, created_at) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(1, 'add_item', '{"id":"x"}', null, null, Date.now());
+  // seq 防護：seed.sql 洗咗 seq → 必須 restore（質量 fix）
+  db.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seq','0')");   // 模擬 seed reset
+  const maxSeq2 = Number(db.prepare('SELECT MAX(seq) AS m FROM mutations').get().m);
+  const curSeq2 = Number(db.prepare("SELECT v FROM world_meta WHERE k = 'seq'").get()?.v ?? 0);
+  // 同 ensureInit 一樣嘅防護邏輯
+  if (maxSeq2 > curSeq2) db.prepare("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seq', ?)").run(String(maxSeq2));
+  const fixedSeq = Number(db.prepare("SELECT v FROM world_meta WHERE k = 'seq'").get()?.v ?? 0);
+  check('seq protection restores after seed reset', fixedSeq === maxSeq2 && maxSeq2 === 1,
+    'fixed=' + fixedSeq + ' max=' + maxSeq2);
   const after = await call('/api/mutations?since=0');
   check('mutations since returns appended row',
     after.body?.mutations?.length === 1 && after.body.mutations[0].seq === 1 &&

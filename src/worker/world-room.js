@@ -121,6 +121,9 @@ CREATE TABLE IF NOT EXISTS world_meta (
 
 // Seed 資料由 scripts/gen-seed.mjs 產生 → build.py 複製成 dist/seed.sql
 // Worker 透過 static assets binding 讀取並 exec（避免 runtime 再寫一份重複資料）。
+// seed_ver 控制版本：改咗 src/01-data.js + 重新 gen-seed 後 bump，DO 會自動補 seed
+// （INSERT OR REPLACE 只冚同 id 嘅 rows，唔會影響用戶新增嘅 u* items）。
+const SEED_VERSION = 2;
 
 // Phase 3：允許用戶新增嘅建築模型白名單
 const MODEL_WHITELIST = [
@@ -389,17 +392,26 @@ export class WorldRoom {
       // 兼容舊表：users.score（遊戲改進 A：貢獻分）
       try { this.sql.exec('ALTER TABLE users ADD COLUMN score INTEGER DEFAULT 0'); }
       catch (e) { /* 已有欄位 */ }
+      // seq 防護：任何情況 seq 唔可以細過 mutations 嘅 max(seq)（撞 unique index = mutation 全 fail）
+      const maxSeq = this.sql.exec('SELECT MAX(seq) AS m FROM mutations').toArray()[0]?.m;
+      const curSeq = Number(this.sql.exec("SELECT v FROM world_meta WHERE k = 'seq'").toArray()[0]?.v || 0);
+      if (maxSeq && Number(maxSeq) > curSeq) {
+        this.sql.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seq', ?)", String(maxSeq));
+        console.log('seq restored to', maxSeq, '(was', curSeq + ')');
+      }
       this.ready = true;
     });
   }
 
-  // 只喺 world_meta 冇 seed marker 時先寫入 seed。
+  // Seed 版本 check：world_meta.seed_ver < SEED_VERSION → 重新 exec seed.sql
+  // （INSERT OR REPLACE 冚 seed rows，用戶 u* rows 保留）。
   // Seed SQL 喺 dist/seed.sql，由 build.py 由 migrations/0002_seed.sql 複製。
   async seedIfEmpty() {
     // 注意：DO SQLite 嘅 cursor.one() 喺零結果時會 throw
     // ("Expected exactly one result from SQL query")，所以用 toArray()[0]。
-    const marker = this.sql.exec("SELECT v FROM world_meta WHERE k = 'seed'").toArray()[0];
-    if (marker) return;
+    const meta = this.sql.exec("SELECT v FROM world_meta WHERE k = 'seed_ver'").toArray()[0];
+    const ver = Number(meta?.v || 0);
+    if (ver >= SEED_VERSION) return;
     const assets = this.env && this.env.ASSETS;
     if (assets && typeof assets.fetch === 'function') {
       try {
@@ -407,10 +419,17 @@ export class WorldRoom {
         if (res && res.ok) {
           const sql = await res.text();
           if (sql && sql.trim()) {
-            // seed SQL 內含多條陳述句；exec() 支援多陳述句
+            // seed SQL 內含多條陳述句；exec() 支援多陳述句。
+            // ⚠️ seed.sql 含 INSERT OR REPLACE seq=0 —— 升級時會洗 mutation 序號，
+            // 所以 exec 前 backup，exec 後 restore。
+            const prevSeq = this.sql.exec("SELECT v FROM world_meta WHERE k = 'seq'").toArray()[0];
             this.sql.exec(sql);
-            this.sql.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seq','0')");
-            this.sql.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seed','1')");
+            this.sql.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seed_ver', ?)", String(SEED_VERSION));
+            if (prevSeq) {
+              this.sql.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seq', ?)", prevSeq.v);
+            } else {
+              this.sql.exec("INSERT OR REPLACE INTO world_meta (k,v) VALUES ('seq','0')");
+            }
             return;
           }
         }
@@ -418,7 +437,7 @@ export class WorldRoom {
         console.error('seed load failed:', err && err.message ? err.message : err);
       }
     }
-    console.warn('WorldRoom: seed.sql unavailable — world stays empty');
+    console.warn('WorldRoom: seed.sql unavailable — world stays at version', ver);
   }
 
   async getWorld() {

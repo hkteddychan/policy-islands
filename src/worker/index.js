@@ -333,7 +333,13 @@ async function runNewsPipeline(env) {
       // 建島：news-YYYYMMDD-NN
       const nn = String(gate.count + 1).padStart(2, '0');
       const islandId = 'news-' + dayKey + '-' + nn;
-      const title = it.title.slice(0, 48);
+      // 島名截短（CSS2D pill 可讀性）：優先喺標點/空格截，最多 24 字
+      let title = it.title.trim();
+      if (title.length > 24) {
+        const cut = title.slice(0, 24);
+        const m = cut.match(/^(.+?)[（(：:、，。,. ]/);
+        title = (m ? m[1] : cut) + '…';
+      }
       const island = {
         id: islandId, no: String(97 + gate.count), theme,
         name: { zh: title, en: title },
