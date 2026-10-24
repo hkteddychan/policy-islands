@@ -6,7 +6,7 @@ from pathlib import Path
 BASE = Path('/opt/data/policy-islands')
 SRC = BASE / 'src'
 ORDER = ['00-imports.js', '01-data.js', '02-scene.js', '03-terrain.js',
-         '04-buildings.js', '05-walkers.js', '06-select.js', '07-ui.js', '08-boot.js', '09-net.js']
+         '04-buildings.js', '05-walkers.js', '06-select.js', '07-ui.js', '08-boot.js', '09-net.js', '10-gameplay.js', '11-vibe.js']
 
 js = '\n'.join((SRC / f).read_text(encoding='utf-8') for f in ORDER)
 head = (SRC / 'head.html').read_text(encoding='utf-8')

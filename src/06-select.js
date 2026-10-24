@@ -177,6 +177,12 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 
 /* ---------- select ---------- */
 function select(kind, id) {
+  // 擴充點：其他模組（10-gameplay.js）掛 window.__onSelect 嚟偵測選取變化。
+  // 唔可以直接覆寫 window.select —— 呢個係 module scope function，
+  // 內部呼叫（openCard 等）仍然指向原本，覆寫無效。
+  if (typeof window.__onSelect === 'function') {
+    try { window.__onSelect(kind, id); } catch (e) { console.warn('__onSelect', e); }
+  }
   SEL.kind = kind; SEL.id = id;
   if (!kind) {
     clearPins();
@@ -236,4 +242,6 @@ function updateLabels() {
     L.el.style.visibility = L.el.classList.contains('mini') ? 'visible' : 'visible';
     labelBoxes.push(r);
   }
+  // 擴充點：11-vibe.js 掛熱度/priority 調整
+  if (typeof window.__onLabels === 'function') { try { window.__onLabels(); } catch (e) {} }
 }

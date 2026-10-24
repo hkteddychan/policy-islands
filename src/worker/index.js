@@ -388,6 +388,29 @@ export async function handleRequest(request, env = {}) {
       if (!r.ok) return fail(r.error, r.status);
       return json({ token: r.token });
     }
+    if (path === '/api/proposals') {
+      const r = await doCall(env, '/proposals');
+      if (!r.ok) return fail(r.error, r.status);
+      return json(r.data);
+    }
+    if (path === '/api/island-votes') {
+      const r = await doCall(env, '/island-votes');
+      if (!r.ok) return fail(r.error, r.status);
+      return json(r.data);
+    }
+    if (path === '/api/tasks') {
+      const auth = request.headers.get('Authorization') || '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+      if (!token) return fail('session token required', 401);
+      const stub = await doStub(env);
+      const r = await stub.fetch(new Request(DO_ORIGIN + '/tasks', {
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + token },
+      }));
+      const d = await r.json().catch(() => null);
+      if (!r.ok) return fail((d && d.error) || 'tasks failed', r.status);
+      return json(d);
+    }
     if (path === '/api/leaderboard') {
       const r = await doCall(env, '/leaderboard');
       if (!r.ok) return fail(r.error, r.status);

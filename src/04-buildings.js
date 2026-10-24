@@ -1,7 +1,7 @@
 /* ============ 04 · instanced part kit + island construction ============ */
 const ISL_TOP = 1.40;          // 島面高度
-const ISL_RAD = 7.4;           // 六角島半徑
-const RING_R = 5.8;            // 路網環半徑
+const ISL_RAD = 8.2;           // 六角島半徑（加大：容納更多建築/小店，城市感更強）
+const RING_R = 6.6;            // 路網環半徑（跟 ISL_RAD 同比例加大）
 
 /* ---------- geometry kinds ---------- */
 const KITS = {
@@ -637,7 +637,7 @@ ISLANDS.forEach(buildIsland);
       if (used.has(kind)) continue;
       used.add(kind);
       const a = isl.base + RNG() * TAU;
-      const rr = 4.35 + RNG() * 0.75;                       // 喺 items 環(3.35)同路環(5.8)之間
+      const rr = RING_R * 0.72 + RNG() * 0.5;               // 喺 items 環同路環之間（跟島大小伸縮）
       const dx = isl.x + Math.sin(a) * rr, dz = isl.z + Math.cos(a) * rr;
       const sc = 0.72 + RNG() * 0.35;
       const b = makeBuilder(new THREE.Vector3(dx, ISL_TOP, dz), sc, RNG() * TAU);
@@ -694,7 +694,7 @@ const ITEM_WORLD = {};        // itemId -> {pos: Vector3, isl, scale, rot}
     ids.forEach((id, k) => {
       const it = ITEMS[id];
       const a = isl.base + (k / ids.length) * TAU + 0.35;
-      const rr = hub ? 3.5 : 3.35;
+      const rr = hub ? RING_R * 0.58 : RING_R * 0.55;        // items 環（跟島大小伸縮）
       const px = isl.x + Math.sin(a) * rr, pz = isl.z + Math.cos(a) * rr;
       const giant = ['book', 'coin', 'clock', 'globe', 'skyscraper', 'estate'].includes(it.model);
       const scale = giant ? (['skyscraper', 'estate'].includes(it.model) ? 3.6 : 3.1) : 2.5;
@@ -767,7 +767,7 @@ window.__addItemMesh = function (item) {
   if (!isl || !ARCH[item.model]) return false;
   const ids = Object.keys(ITEMS).filter(k => ITEMS[k].isl === item.islandId);
   const a = isl.base + (0.35 + (ids.length % 6) * 0.9 + RNG() * 0.25);
-  const rr = 3.35;
+  const rr = RING_R * 0.55;                                  // items 環（跟島大小伸縮）
   const px = isl.x + Math.sin(a) * rr, pz = isl.z + Math.cos(a) * rr;
   const b = standaloneBuilder(new THREE.Vector3(px, ISL_TOP, pz), 2.5, -a + 0.4);
   b.push('cylinder', 0, 0.02, 0, 1.22, 0.06, 1.22, PAL.ink, 0, 0, 0, item.id, item.islandId);
@@ -777,6 +777,115 @@ window.__addItemMesh = function (item) {
   if (typeof STATE !== 'undefined') STATE.dirty = true;   // 唔 set dirty 唔會 render
   return true;
 };
+/* ---------- 新島自動連路 + 建築群（Phase 6） ----------
+   新島唔再係「空地」：
+   1. autoLinkNewIsland —— 搵最近嘅現有島，建一條視覺橋（standalone）+ 加 FLOWS 記錄
+   2. populateNewIsland  —— 用 standaloneBuilder 種 3-4 座香港小店 + 大樹 + 小品，
+                            避免依賴已 freeze 嘅 instanced kit（嗰啲動態加唔到） */
+function nearestIslandId(x, z, excludeId) {
+  let best = null, bestD = Infinity;
+  for (const id in ISL_POS) {
+    if (id === excludeId) continue;
+    const p = ISL_POS[id];
+    const d = (p.x - x) ** 2 + (p.y - z) ** 2;
+    if (d < bestD) { bestD = d; best = id; }
+  }
+  return best;
+}
+
+function autoLinkNewIsland(isl) {
+  // 視覺橋：新島 ring 最近點 → 目標島 ring 最近點（standalone 唔入 kit）
+  const x = ISL_POS[isl.id].x, z = ISL_POS[isl.id].y;
+  const targetId = nearestIslandId(x, z, isl.id);
+  if (!targetId) return;
+  const A = ISL_NODES[isl.id], C = ISL_NODES[targetId];
+  if (!A || !C) return;
+  let best = null;
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) {
+    const d = GRAPH.nodes[A.ring[i]].distanceTo(GRAPH.nodes[C.ring[j]]);
+    if (!best || d < best.d) best = { d, i, j };
+  }
+  if (!best) return;
+  const na = A.ring[best.i], nc = C.ring[best.j];
+  const p1 = GRAPH.nodes[na], p2 = GRAPH.nodes[nc];
+  addEdge(na, nc);                       // 行路網可達
+  const mid = p1.clone().add(p2).multiplyScalar(0.5);
+  const len = p1.distanceTo(p2);
+  const ang = Math.atan2(p2.x - p1.x, p2.z - p1.z);
+  const b = standaloneBuilder(new THREE.Vector3(mid.x, ISL_TOP - 0.06, mid.z), 1, ang);
+  b.push('rbox', 0, 0, 0, 1.5, 0.12, len, PAL.wood, 0, 0, 0, null, null);
+  for (const sgn of [-1, 1]) {
+    const off = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang)).multiplyScalar(0.66 * sgn);
+    b.push('rbox', off.x, 0.16, off.z, 0.07, 0.07, len, PAL.eave, 0, 0, 0, null, null);
+    for (let k = 0; k <= 4; k++) {
+      const t = k / 4;
+      b.push('glowsphere', lerp(p1.x, p2.x, t) - mid.x + off.x, 0.22, lerp(p1.z, p2.z, t) - mid.z + off.z, 0.10, 0.10, 0.10, PAL.night, 0, 0, 0, null, null);
+    }
+  }
+  scene.add(b.group);
+  // 數據層：加 FLOWS + FLOW_OBJ（有路連接 → 小人會行、協作線會顯示）
+  if (typeof FLOWS !== 'undefined') {
+    const fid = isl.id + '-link';
+    if (!FLOWS.some(f => f.id === fid)) {
+      const flow = {
+        id: fid, from: isl.id, to: targetId, kind: 'pending', ev: 'C',
+        updated: '2026 Q4', depts: 1,
+        carry: { zh: '新聞島連接', en: 'news island link' }, icon: 'link',
+        note: { zh: '自動生成嘅島嶼連接路。', en: 'Auto-generated island link.' }
+      };
+      FLOWS.push(flow);
+      // ⚠️ 一定要同步建 FLOW_OBJ + tube，否則 walkers/flow 渲染 crash（.tube undefined）
+      if (window.__addFlow) { try { window.__addFlow(flow); } catch (e) {} }
+      else if (typeof window.__addFlowFallback === 'function') { window.__addFlowFallback(flow); }
+    }
+  }
+  return targetId;
+}
+
+function populateNewIsland(isl) {
+  const pos = ISL_POS[isl.id];
+  const x = pos.x, z = pos.y;
+  const islNode = ISL_NODES[isl.id];
+  if (!islNode) return;
+  const base = islNode.base;
+  const DECOR = ['chaChaan', 'pawnshop', 'mahjong', 'cinema', 'market', 'stall', 'clinic', 'cottage'];
+  const used = new Set();
+  const n = 3 + Math.floor(RNG() * 2);              // 3-4 座
+  for (let i = 0; i < n; i++) {
+    const kind = DECOR[Math.floor(RNG() * DECOR.length)];
+    if (used.has(kind)) continue;
+    used.add(kind);
+    const a = base + RNG() * TAU;
+    const rr = RING_R * 0.72 + RNG() * 0.5;
+    const dx = x + Math.sin(a) * rr, dz = z + Math.cos(a) * rr;
+    const sc = 0.72 + RNG() * 0.35;
+    const b = standaloneBuilder(new THREE.Vector3(dx, ISL_TOP, dz), sc, RNG() * TAU);
+    b.push('cylinder', 0, 0.02, 0, 1.15, 0.05, 1.15, PAL.ink, 0, 0, 0, null, isl.id, true);
+    if (ARCH[kind]) ARCH[kind](b, null, isl.id);
+    scene.add(b.group);   // ⚠️ 唔加 scene 睇唔到（之前漏咗）
+  }
+  // 大樹 3-4 棵（用返島嘅樹種）
+  const sp = ISL_SPECIES[isl.id] || 'cherry';
+  const tn = 3 + Math.floor(RNG() * 2);
+  for (let i = 0; i < tn; i++) {
+    const a = base + (i / tn) * TAU + 0.3;
+    const rr = ISL_RAD - 2.2 - RNG() * 1.4;
+    const b = standaloneBuilder(new THREE.Vector3(x + Math.sin(a) * rr, ISL_TOP, z + Math.cos(a) * rr), 1.15 + RNG() * 0.35, 0);
+    treeSpecies(b, sp, 0, 0, 0, 1, null, isl.id);
+    scene.add(b.group);   // ⚠️ 唔加 scene 睇唔到（之前漏咗）
+  }
+  // 路燈 3 支（外圈）
+  for (let i = 0; i < 3; i++) {
+    const a = base + (i / 3) * TAU + 0.5;
+    const lx = Math.sin(a) * (ISL_RAD - 0.75), lz = Math.cos(a) * (ISL_RAD - 0.75);
+    const b = standaloneBuilder(new THREE.Vector3(lx, ISL_TOP, lz), 1, 0);
+    b.push('cylinder', 0, 0.42, 0, 0.09, 0.84, 0.09, PAL.ink, 0, 0, 0, null, isl.id, false);
+    b.push('glowsphere', 0, 0.88, 0, 0.20, 0.20, 0.20, PAL.night, 0, 0, 0, null, isl.id, false);
+    scene.add(b.group);   // ⚠️ 唔加 scene 睇唔到（之前漏咗）
+  }
+  if (typeof STATE !== 'undefined') STATE.dirty = true;
+}
+
 window.__addIsland = function (isl) {
   // 已完整建好（ISL_NODES 有 entry）→ skip
   if (ISL_NODES[isl.id]) return false;
@@ -793,6 +902,9 @@ window.__addIsland = function (isl) {
   ISL_BY_ID[isl.id] = isl;
   ISLANDS.push(isl);
   const g = buildIsland(isl);
+  // Phase 6：新島自動連路（視覺橋 + FLOWS）+ 建築群（小店/樹/路燈）
+  autoLinkNewIsland(isl);
+  populateNewIsland(isl);
   // 新聞島 label（否則 updateLabels crash：ISL_MESH[id].label 係 null）
   if (typeof createIslandLabel === 'function') createIslandLabel(isl);
   // 💡 唔 set dirty → CSS2DRenderer 唔會 re-render → 新 label/mesh 睇唔到

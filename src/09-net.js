@@ -29,6 +29,8 @@
     return null;
   }
 
+  NET.ensureSession = ensureSession;   // 10-gameplay.js 共用同一個 session
+
   // 拉一次完整世界（初次載入時合併 server 新增嘅 items/islands）
   async function fetchWorld() {
     try {
@@ -102,7 +104,11 @@
       if (window.__addIsland) window.__addIsland(p.island);   // 佢做晒 push+build+label
       toast('📰 新聞島「' + (p.island.name && p.island.name.zh) + '」出現');
     } else if (mut.type === 'add_flow' && p.flow) {
-      if (!FLOWS.some(f => f.id === p.flow.id)) FLOWS.push(p.flow);
+      if (!FLOWS.some(f => f.id === p.flow.id)) {
+        FLOWS.push(p.flow);
+        // ⚠️ 同步建 FLOW_OBJ + tube，否則 walkers/flow 渲染 crash
+        if (window.__addFlow) { try { window.__addFlow(p.flow); } catch (e) {} }
+      }
     }
   }
 
@@ -246,13 +252,21 @@
       const msgEl = card.querySelector('#piMsg');
       const islandId = isel.value, model = msel.value, name = card.querySelector('#piName').value.trim();
       if (!name) { msgEl.textContent = '❌ 請填名稱'; msgEl.style.color = '#a83232'; return; }
-      const id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const item = { id, islandId, no: 99, model, name: { zh: name, en: name } };
-      msgEl.textContent = '⏳ 提交中…';
+      msgEl.textContent = '⏳ 提交提案中…';
       try {
-        const d = await submitMutation('add_item', { item });
-        msgEl.textContent = '✅ 已提交（seq ' + d.seq + '）—— 世界已更新';
-        msgEl.style.color = '#2f6f4f';
+        if (window.__createProposal) {
+          // Phase 5：提案制 —— 提交後要集齊 5 個支持票先落世界
+          const pid = await window.__createProposal(islandId, model, name);
+          msgEl.textContent = '✅ 提案已提交（' + pid + '）—— 集齊 5 個支持票就會正式落實';
+          msgEl.style.color = '#2f6f4f';
+        } else {
+          // fallback（無 gameplay 模組時）直接落世界
+          const id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+          const item = { id, islandId, no: 99, model, name: { zh: name, en: name } };
+          const d = await submitMutation('add_item', { item });
+          msgEl.textContent = '✅ 已提交（seq ' + d.seq + '）—— 世界已更新';
+          msgEl.style.color = '#2f6f4f';
+        }
         card.querySelector('#piName').value = '';
       } catch (e) {
         msgEl.textContent = '❌ ' + (e && e.message);
@@ -263,6 +277,8 @@
 
   /* ── toast ─────────────────────────────────────────────────────────── */
   function toast(text) {
+    // 單一 toast 實作：掛到 window 俾其他模組用（10-gameplay.js）
+    if (window.__piToast && window.__piToast !== toast) { window.__piToast(text); return; }
     let t = document.getElementById('piToast');
     if (!t) {
       t = document.createElement('div');
@@ -275,6 +291,7 @@
     clearTimeout(t._h);
     t._h = setTimeout(() => { t.style.opacity = '0'; }, 3200);
   }
+  window.__piToast = toast;
 
   /* ── boot ──────────────────────────────────────────────────────────── */
   function boot() {

@@ -310,7 +310,7 @@ const FLOWS = [
 ];
 
 /* 島的位置：中心市政 + 6 座環形島 */
-const ISL_R = 22;             // 環島半徑
+const ISL_R = 24;             // 環島半徑（7 島 + 新聞島外環 36 之間留返空間）
 const ISL_POS = {};
 ISLANDS.forEach((I, i) => {
   if (I.ang === null) { ISL_POS[I.id] = new THREE.Vector2(0, 0); return; }

@@ -55,8 +55,11 @@ const flowMat = new THREE.ShaderMaterial({
       gl_FragColor = vec4(uColor, uOpacity);
     }`
 });
-for (const f of FLOWS) {
+// 建立單一條 flow 嘅 tube（初始 + 動態加 flow 共用；新島連路都要有）
+function buildFlowTube(f) {
   const o = FLOW_OBJ[f.id];
+  if (!o) return;
+  if (o.tube) { scene.remove(o.tube); o.tube = null; }   // 重建時先移除舊 tube
   const curve = new THREE.CatmullRomCurve3(o.pts, false, 'catmullrom', 0.08);
   const geo = new THREE.TubeGeometry(curve, Math.max(24, o.pts.length * 12), FLOW_R, 6, false);
   const mat = flowMat.clone();
@@ -70,6 +73,22 @@ for (const f of FLOWS) {
   o.tube = tube;
   o.curve = curve;
 }
+for (const f of FLOWS) buildFlowTube(f);
+
+// 動態加 flow（09-net handleMutation / 10-gameplay autoLink）→ 建 FLOW_OBJ + tube
+window.__addFlow = function (f) {
+  if (FLOW_OBJ[f.id]) return false;
+  const A = ISL_NODES[f.from], C = ISL_NODES[f.to];
+  if (!A || !C) return false;
+  const nodePath = shortestPath(A.center, C.center);
+  const pts = nodePath.map(i => GRAPH.nodes[i].clone());
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+  const total = cum[cum.length - 1] || 1;
+  FLOW_OBJ[f.id] = { def: f, pts, cum, total, tube: null, walkers: [] };
+  buildFlowTube(f);
+  return true;
+};
 
 /* ---------- walker parts (instanced, dynamic) ---------- */
 const walkerGeo = {

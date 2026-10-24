@@ -6,6 +6,7 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   STATE.dirty = true;
+  if (typeof window.__onResize === 'function') { try { window.__onResize(w, h); } catch (e) {} }
 }
 window.addEventListener('resize', resize);
 if (window.ResizeObserver) new ResizeObserver(resize).observe(document.getElementById('app'));
@@ -135,6 +136,9 @@ function tick() {
 
   labelTick += dt;
   if (labelTick > 0.12) { labelTick = 0; updateLabels(); }
+
+  // 11-vibe：事件重播節拍
+  if (typeof window.__vibeTick === 'function') { try { window.__vibeTick(dt); } catch (e) {} }
 
   if (STATE.dirty) {
     renderer.render(scene, camera);

@@ -113,6 +113,38 @@ CREATE TABLE IF NOT EXISTS news_items (
 CREATE INDEX IF NOT EXISTS idx_news_fetched ON news_items(fetched_at);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_news_url ON news_items(url);
 
+CREATE TABLE IF NOT EXISTS proposals (
+  id TEXT PRIMARY KEY,
+  island_id TEXT NOT NULL REFERENCES islands(id),
+  name_zh TEXT NOT NULL,
+  name_en TEXT,
+  model TEXT NOT NULL,
+  creator_token TEXT,
+  votes_for INTEGER NOT NULL DEFAULT 0,
+  votes_against INTEGER NOT NULL DEFAULT 0,
+  voters TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at INTEGER NOT NULL,
+  decided_at INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS island_votes (
+  island_id TEXT NOT NULL,
+  token_hash TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (island_id, token_hash, kind)
+);
+
+CREATE TABLE IF NOT EXISTS task_state (
+  token_hash TEXT NOT NULL,
+  day TEXT NOT NULL,
+  task_id TEXT NOT NULL,
+  progress INTEGER NOT NULL DEFAULT 0,
+  done INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (token_hash, day, task_id)
+);
+
 CREATE TABLE IF NOT EXISTS world_meta (
   k TEXT PRIMARY KEY,
   v TEXT
@@ -124,6 +156,23 @@ CREATE TABLE IF NOT EXISTS world_meta (
 // seed_ver 控制版本：改咗 src/01-data.js + 重新 gen-seed 後 bump，DO 會自動補 seed
 // （INSERT OR REPLACE 只冚同 id 嘅 rows，唔會影響用戶新增嘅 u* items）。
 const SEED_VERSION = 2;
+
+// Phase 5：市民提案通過門檻（讚好票數）
+const PROPOSAL_THRESHOLD = 5;
+
+// SHA-256 hex（token → hash；用 globalThis.crypto 保持 Worker/Node 通用）
+async function sha256Hex(text) {
+  const buf = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(text || '')));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Phase 5：每日任務定義（每日 0 點重置；進度存 task_state）
+const TASKS = [
+  { id: 'build', label: { zh: '加一座建築', en: 'Add a building' }, target: 1 },
+  { id: 'news', label: { zh: '探訪 3 個新聞島', en: 'Visit 3 news islands' }, target: 3 },
+  { id: 'flow', label: { zh: '查看一條協作線', en: 'View a collaboration flow' }, target: 1 },
+  { id: 'vote', label: { zh: '投票支持一個提案', en: 'Vote for a proposal' }, target: 1 },
+];
 
 // Phase 3：允許用戶新增嘅建築模型白名單
 const MODEL_WHITELIST = [
@@ -229,6 +278,44 @@ export class WorldRoom {
         const ok = todayCount < 3 && totalCount < 40 && Number(sameTheme?.n || 0) < 1;
         return Response.json({ ok, count: todayCount, total: totalCount });
       }
+      // Phase 5：市民提案 / 每日任務 / 島支持度
+      if (path === '/proposals') {
+        const rows = this.sql.exec(
+          `SELECT id, island_id, name_zh, name_en, model, votes_for, votes_against, status, created_at
+           FROM proposals ORDER BY created_at DESC LIMIT 100`).toArray();
+        const out = rows.map(r => ({
+          id: r.id, islandId: r.island_id, name: { zh: r.name_zh, en: r.name_en || r.name_zh },
+          model: r.model, votesFor: r.votes_for, votesAgainst: r.votes_against,
+          status: r.status, createdAt: r.created_at,
+        }));
+        return Response.json({ ok: true, proposals: out, threshold: PROPOSAL_THRESHOLD });
+      }
+      if (path === '/tasks') {
+        const auth = request.headers.get('Authorization') || '';
+        const raw = (auth.startsWith('Bearer ') ? auth.slice(7) : '') || url.searchParams.get('token') || '';
+        const hash = await sha256Hex(raw);
+        const day = new Date().toISOString().slice(0, 10);
+        const rows = this.sql.exec(
+          'SELECT task_id, progress, done FROM task_state WHERE token_hash = ? AND day = ?',
+          hash, day).toArray();
+        return Response.json({
+          ok: true, day,
+          tasks: TASKS.map(t => {
+            const r = rows.find(x => x.task_id === t.id);
+            return { id: t.id, label: t.label, target: t.target, progress: r ? r.progress : 0, done: r ? r.done : 0 };
+          }),
+        });
+      }
+      if (path === '/island-votes') {
+        const rows = this.sql.exec(
+          `SELECT island_id, kind, COUNT(*) AS c FROM island_votes GROUP BY island_id, kind`).toArray();
+        const map = {};
+        for (const r of rows) {
+          if (!map[r.island_id]) map[r.island_id] = { support: 0, claim: 0 };
+          map[r.island_id][r.kind] = r.c;
+        }
+        return Response.json({ ok: true, votes: map });
+      }
       const m = path.match(/^\/islands\/(.+)$/);
       if (m) {
         const id = decodeURIComponent(m[1]);
@@ -300,6 +387,31 @@ export class WorldRoom {
     return { ok: true, seq };
   }
 
+  // Phase 5：每日任務進度（每日重置；token_hash 為主鍵一部分）
+  async bumpTask(actorToken, taskId, delta = 1) {
+    if (!actorToken) return;
+    const t = TASKS.find(x => x.id === taskId);
+    if (!t) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const now = Date.now();
+    this.sql.exec(
+      `INSERT OR IGNORE INTO task_state (token_hash, day, task_id, progress, done) VALUES (?,?,?,0,0)`,
+      actorToken, day, taskId);
+    const row = this.sql.exec(
+      'SELECT progress, done FROM task_state WHERE token_hash = ? AND day = ? AND task_id = ?',
+      actorToken, day, taskId).toArray()[0];
+    if (!row || row.done) return;
+    const prog = Math.min(t.target, (row.progress || 0) + delta);
+    const done = prog >= t.target ? 1 : 0;
+    this.sql.exec(
+      'UPDATE task_state SET progress = ?, done = ? WHERE token_hash = ? AND day = ? AND task_id = ?',
+      prog, done, actorToken, day, taskId);
+    // 完成任務 → +15 分
+    if (done && !row.done && actorToken) {
+      this.sql.exec('UPDATE users SET score = score + 15 WHERE token_hash = ?', actorToken);
+    }
+  }
+
   async nextSeq() {
     const meta = this.sql.exec("SELECT v FROM world_meta WHERE k = 'seq'").toArray()[0];
     const seq = (Number(meta?.v) || 0) + 1;
@@ -331,6 +443,33 @@ export class WorldRoom {
       if (!f.from || !f.to) return 'from/to required';
       return null;
     }
+    if (type === 'create_proposal') {
+      const pr = payload.proposal || {};
+      if (!pr.id || !/^p-[0-9]{8}-[a-z0-9]{4}$/.test(pr.id)) return 'proposal.id must be p-YYYYMMDD-xxxx';
+      if (!pr.islandId || typeof pr.islandId !== 'string') return 'proposal.islandId required';
+      const isl = this.sql.exec('SELECT id FROM islands WHERE id = ? AND deleted_at IS NULL', pr.islandId).toArray()[0];
+      if (!isl) return 'island not found: ' + pr.islandId;
+      if (!pr.model || !MODEL_WHITELIST.includes(pr.model)) return 'model not allowed';
+      if (!pr.name || !pr.name.zh || pr.name.zh.length < 1 || pr.name.zh.length > 24) return 'name_zh 1-24 chars';
+      return null;
+    }
+    if (type === 'vote_proposal') {
+      const v = payload.vote || {};
+      if (!v.proposalId || typeof v.proposalId !== 'string') return 'vote.proposalId required';
+      if (!v.dir || (v.dir !== 'for' && v.dir !== 'against')) return 'vote.dir must be for|against';
+      return null;
+    }
+    if (type === 'vote_island') {
+      const v = payload.vote || {};
+      if (!v.islandId || typeof v.islandId !== 'string') return 'vote.islandId required';
+      if (!v.kind || (v.kind !== 'support' && v.kind !== 'claim')) return 'vote.kind must be support|claim';
+      return null;
+    }
+    if (type === 'task_progress') {
+      const t = payload.taskId;
+      if (!t || !TASKS.some(x => x.id === t)) return 'taskId invalid';
+      return null;
+    }
     return 'unknown mutation type: ' + type;
   }
 
@@ -348,6 +487,7 @@ export class WorldRoom {
         this.sql.exec('UPDATE users SET score = score + 10, last_seen = ? WHERE token_hash = ?',
           now, actorToken);
       }
+      this.bumpTask(actorToken, 'build', 1);
       return { ok: true };
     }
     if (type === 'add_island') {
@@ -379,6 +519,102 @@ export class WorldRoom {
         now, actorToken || null);
       return { ok: true };
     }
+    if (type === 'create_proposal') {
+      const pr = payload.proposal;
+      const id = pr.id;
+      const exist = this.sql.exec('SELECT id, status FROM proposals WHERE id = ?', id).toArray()[0];
+      if (exist) return { ok: false, error: 'proposal already exists' };
+      this.sql.exec(
+        `INSERT INTO proposals (id, island_id, name_zh, name_en, model, creator_token, votes_for, votes_against, voters, status, created_at)
+         VALUES (?,?,?,?,?,?,0,0,'[]','pending',?)`,
+        id, pr.islandId, pr.name.zh, pr.name.en || pr.name.zh, pr.model, actorToken || null, now);
+      // 提案開波 +2 分
+      if (actorToken) {
+        this.sql.exec('UPDATE users SET score = score + 2 WHERE token_hash = ?', actorToken);
+      }
+      return { ok: true };
+    }
+    if (type === 'vote_proposal') {
+      const v = payload.vote;
+      const pr = this.sql.exec('SELECT * FROM proposals WHERE id = ?', v.proposalId).toArray()[0];
+      if (!pr) return { ok: false, error: 'proposal not found' };
+      if (pr.status !== 'pending') return { ok: false, error: 'proposal already ' + pr.status };
+      let voters = [];
+      try { voters = JSON.parse(pr.voters || '[]'); } catch {}
+      if (actorToken && voters.includes(actorToken)) return { ok: false, error: 'already voted' };
+      if (actorToken) voters.push(actorToken);
+      const delta = v.dir === 'for' ? 1 : -1;
+      this.sql.exec(
+        'UPDATE proposals SET votes_for = votes_for + ?, votes_against = votes_against + ?, voters = ? WHERE id = ?',
+        v.dir === 'for' ? 1 : 0, v.dir === 'against' ? 1 : 0, JSON.stringify(voters), v.proposalId);
+      // 重新計算狀態
+      const after = this.sql.exec('SELECT votes_for, votes_against FROM proposals WHERE id = ?', v.proposalId).toArray()[0];
+      let status = 'pending';
+      if (after.votes_for >= PROPOSAL_THRESHOLD) status = 'approved';
+      else if (after.votes_for + after.votes_against >= 20) status = 'rejected';
+      this.sql.exec('UPDATE proposals SET status = ?, decided_at = ? WHERE id = ?',
+        status, status === 'pending' ? null : now, v.proposalId);
+      // 通過 → 正式落世界（加 item）
+      if (status === 'approved') {
+        const itemId = 'pr-' + v.proposalId.slice(2) + '-item';
+        const isl = this.sql.exec('SELECT id, no FROM islands WHERE id = ?', pr.island_id).toArray()[0];
+        const no = (this.sql.exec('SELECT COUNT(*) AS c FROM items WHERE island_id = ? AND deleted_at IS NULL', pr.island_id).toArray()[0]?.c || 0) + 1;
+        const ex = this.sql.exec('SELECT id FROM items WHERE id = ?', itemId).toArray()[0];
+        if (!ex) {
+          this.sql.exec(
+            `INSERT INTO items (id, island_id, no, model, name_zh, name_en, facts_json, timeline_json, src, freq, created_at, created_by, deleted_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
+            itemId, pr.island_id, no, pr.model, pr.name_zh, pr.name_en || pr.name_zh,
+            JSON.stringify([{ v: 'PASS', u: { zh: '議', en: '' }, k: { zh: '市民投票通過', en: 'passed by public vote' } }]),
+            JSON.stringify([{ d: 'now', t: { zh: '投票通過，即時落實', en: 'approved by vote' } }]),
+            '市民投票通過', '即時', now, pr.creator_token || null);
+        }
+        // 提案人 +20 分
+        if (pr.creator_token) {
+          this.sql.exec('UPDATE users SET score = score + 20 WHERE token_hash = ?', pr.creator_token);
+        }
+      }
+      // 投票 +1 分
+      if (actorToken) {
+        this.sql.exec('UPDATE users SET score = score + 1 WHERE token_hash = ?', actorToken);
+      }
+      this.bumpTask(actorToken, 'vote', 1);
+      return { ok: true };
+    }
+    if (type === 'task_progress') {
+      this.bumpTask(actorToken, payload.taskId, 1);
+      return { ok: true };
+    }
+    if (type === 'vote_island') {
+      const v = payload.vote;
+      const isl = this.sql.exec('SELECT id FROM islands WHERE id = ? AND deleted_at IS NULL', v.islandId).toArray()[0];
+      if (!isl) return { ok: false, error: 'island not found' };
+      if (v.kind === 'claim') {
+        // 認領：3 日內先可以，+25 分
+        const created = Number(isl.created_at || 0);
+        if (created && now - created > 3 * 86400000) return { ok: false, error: 'claim window closed (3 days)' };
+        const dup = this.sql.exec('SELECT 1 FROM island_votes WHERE island_id = ? AND token_hash = ? AND kind = ?',
+          v.islandId, actorToken || '', v.kind).toArray()[0];
+        if (dup) return { ok: false, error: 'already claimed' };
+        this.sql.exec('INSERT OR REPLACE INTO island_votes (island_id, token_hash, kind, created_at) VALUES (?,?,?,?)',
+          v.islandId, actorToken || '', v.kind, now);
+        this.sql.exec('UPDATE islands SET created_by = ? WHERE id = ?', actorToken || null, v.islandId);
+        if (actorToken) {
+          this.sql.exec('UPDATE users SET score = score + 25 WHERE token_hash = ?', actorToken);
+        }
+        return { ok: true };
+      }
+      // support
+      const dup = this.sql.exec('SELECT 1 FROM island_votes WHERE island_id = ? AND token_hash = ? AND kind = ?',
+        v.islandId, actorToken || '', v.kind).toArray()[0];
+      if (dup) return { ok: false, error: 'already supported' };
+      this.sql.exec('INSERT OR REPLACE INTO island_votes (island_id, token_hash, kind, created_at) VALUES (?,?,?,?)',
+        v.islandId, actorToken || '', v.kind, now);
+      if (actorToken) {
+        this.sql.exec('UPDATE users SET score = score + 1 WHERE token_hash = ?', actorToken);
+      }
+      return { ok: true };
+    }
     return { ok: false, error: 'unknown type' };
   }
 
@@ -390,8 +626,7 @@ export class WorldRoom {
       this.sql.exec(SCHEMA_SQL);
       await this.seedIfEmpty();
       // 兼容舊表：users.score（遊戲改進 A：貢獻分）
-      try { this.sql.exec('ALTER TABLE users ADD COLUMN score INTEGER DEFAULT 0'); }
-      catch (e) { /* 已有欄位 */ }
+      try { this.sql.exec('ALTER TABLE users ADD COLUMN score INTEGER DEFAULT 0'); } catch (e) { /* 已有欄位 */ }
       // seq 防護：任何情況 seq 唔可以細過 mutations 嘅 max(seq)（撞 unique index = mutation 全 fail）
       const maxSeq = this.sql.exec('SELECT MAX(seq) AS m FROM mutations').toArray()[0]?.m;
       const curSeq = Number(this.sql.exec("SELECT v FROM world_meta WHERE k = 'seq'").toArray()[0]?.v || 0);
