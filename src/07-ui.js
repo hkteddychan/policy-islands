@@ -58,7 +58,7 @@ function openCard(kind, id) {
       <div class="cardtitle">${tr(I.name)}</div>
       <div class="cardsum">${tr(I.summary)}</div>
       <div class="eyebrow" style="margin-top:8px">${LANG === 'en' ? 'INITIATIVES' : '細項'}</div>
-      ${ids.map(k => `<div class="itemli" data-item="${k}"><span class="pin1">${['①', '②', '③', '④', '⑤', '⑥'][ITEMS[k].no - 1]}</span><span>${tr(ITEMS[k].name)}</span></div>`).join('')}
+      ${ids.map(k => `<div class="itemli" data-item="${k}"><span class="pin1">${['①', '②', '③', '④', '⑤', '⑥'][ITEMS[k].no - 1] || String(ITEMS[k].no)}</span><span>${tr(ITEMS[k].name)}</span></div>`).join('')}
       <div class="eyebrow" style="margin-top:12px">${LANG === 'en' ? 'COLLABORATIONS' : '協作關係'}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
         ${fs.map(f => `<span class="chip" data-flow="${f.id}">${f.kind === 'official' ? '●' : f.kind === 'thematic' ? '╌' : '⋯'} ${tr(f.carry)}</span>`).join('')}
@@ -70,7 +70,7 @@ function openCard(kind, id) {
     const thumb = renderThumb(id);
     cardBody.innerHTML = `
       <div class="eyebrow">${I.no} · ${tr(I.name)}</div>
-      <div class="cardtitle">${['①', '②', '③', '④', '⑤', '⑥'][it.no - 1]} ${tr(it.name)}</div>
+      <div class="cardtitle">${['①', '②', '③', '④', '⑤', '⑥'][it.no - 1] || String(it.no)} ${tr(it.name)}</div>
       <div style="display:flex;gap:12px;align-items:flex-start;margin-top:8px">
         <img src="${thumb}" width="120" height="120" style="border-radius:14px;box-shadow:0 6px 18px #4a2a1422;border:1px solid #eee0cf;background:#eef3f2" alt="">
         <div style="flex:1">${factTiles(it)}</div>
@@ -129,7 +129,7 @@ function renderSidebar() {
   tt.innerHTML = ISLANDS.map(I => {
     const ids = Object.keys(ITEMS).filter(k => ITEMS[k].isl === I.id);
     return `<details class="isl" data-island="${I.id}"><summary><span class="no">${I.no}</span>${I.icon} ${tr(I.name)}</summary>
-      ${ids.map(k => `<div class="itrow" data-item="${k}"><span class="pin1">${['①', '②', '③', '④', '⑤', '⑥'][ITEMS[k].no - 1]}</span> ${tr(ITEMS[k].name)}</div>`).join('')}
+      ${ids.map(k => `<div class="itrow" data-item="${k}"><span class="pin1">${['①', '②', '③', '④', '⑤', '⑥'][ITEMS[k].no - 1] || String(ITEMS[k].no)}</span> ${tr(ITEMS[k].name)}</div>`).join('')}
     </details>`;
   }).join('');
   tf.innerHTML = FLOWS.map(f => `<div class="flrow" data-flow="${f.id}">

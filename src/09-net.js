@@ -262,7 +262,8 @@
         } else {
           // fallback（無 gameplay 模組時）直接落世界
           const id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-          const item = { id, islandId, no: 99, model, name: { zh: name, en: name } };
+          // no 由 server 重新計算；本地 fallback 用 1，避免 UI ①..⑥ 陣列越界。
+          const item = { id, islandId, no: 1, model, name: { zh: name, en: name } };
           const d = await submitMutation('add_item', { item });
           msgEl.textContent = '✅ 已提交（seq ' + d.seq + '）—— 世界已更新';
           msgEl.style.color = '#2f6f4f';

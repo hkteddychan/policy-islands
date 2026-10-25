@@ -11,7 +11,7 @@ import { WorldRoom } from './world-room.js';
 const VERSION = '1.1.0-phase1.5';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
 };
@@ -99,7 +99,7 @@ function mutationRow(row) {
     type: row.type,
     payload: parseJSON(row.payload_json, {}),
     actorId: row.actor_id,
-    actorToken: row.actor_token,
+    actorToken: null,
     createdAt: row.created_at,
   };
 }
@@ -222,17 +222,30 @@ function randomToken() {
   globalThis.crypto.getRandomValues(arr);
   return 'pi_' + [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
-async function createSession(env) {
+// 同一 IP 30 秒內重用同一 token：避免不停 POST /api/session 換新 token
+// 而繞過 DO 嘅 per-token mutation 限流（Map 只存活於單一 isolate，成本最低）。
+const SESSION_WINDOW_MS = 30000;
+const sessionIssued = new Map();
+async function createSession(env, clientIp) {
   if (!hasDO(env)) return { ok: false, status: 503, error: 'no world backend' };
+  const now = Date.now();
+  const ip = clientIp || 'unknown';
+  const cached = sessionIssued.get(ip);
+  if (cached && now - cached.at < SESSION_WINDOW_MS) return { ok: true, token: cached.token };
   const token = randomToken();
   const hash = await sha256Hex(token);
-  const now = Date.now();
   const stub = await doStub(env);
   const r = await stub.fetch(new Request(DO_ORIGIN + '/session', {
     method: 'POST',
     body: JSON.stringify({ tokenHash: hash, now })
   }));
   if (!r.ok) return { ok: false, status: 500, error: 'session create failed' };
+  sessionIssued.set(ip, { token, at: now });
+  if (sessionIssued.size > 5000) {
+    for (const [k, v] of sessionIssued) {
+      if (now - v.at > SESSION_WINDOW_MS) sessionIssued.delete(k);
+    }
+  }
   return { ok: true, token };
 }
 async function verifyToken(env, token) {
@@ -295,10 +308,9 @@ function parseRss(xml) {
   }
   return items;
 }
-function newsId(url) {
-  // 同 news_items.id 一致：sha256(url) 前 16 hex
-  return [...new Uint8Array(new TextEncoder().encode(url)).slice(0, 8)]
-    .map((b) => b.toString(16).padStart(2, '0')).join('');
+async function newsId(url) {
+  // 同 world-room.js 嘅 newsId() 一致：sha256(url) 前 16 hex
+  return (await sha256Hex(url)).slice(0, 16);
 }
 async function runNewsPipeline(env) {
   if (!hasDO(env)) return { ok: false, error: 'no backend' };
@@ -317,7 +329,7 @@ async function runNewsPipeline(env) {
     const items = parseRss(xml);
     out.fetched += items.length;
     for (const it of items) {
-      const id = newsId(it.link);
+      const id = await newsId(it.link);
       const text = it.title + ' ' + it.desc;
       const theme = classifyNews(text);
       if (!theme) { out.skipped++; continue; }
@@ -341,10 +353,11 @@ async function runNewsPipeline(env) {
         title = (m ? m[1] : cut) + '…';
       }
       const island = {
-        id: islandId, no: String(97 + gate.count), theme,
+        id: islandId, no: String(97 + Number(gate.newsTotal || 0)), theme,
         name: { zh: title, en: title },
         summary: { zh: it.desc.slice(0, 120), en: it.desc.slice(0, 120) },
         icon: '📰', color: 0x9cc27a, ang: null, radius: 32,
+        newsId: id,
         itemModel: theme === 'transport' ? 'kcr' : theme === 'health' ? 'clinic' : theme === 'education' ? 'temple' : theme === 'housing' ? 'estate' : theme === 'environment' ? 'lighthouse' : 'jockey'
       };
       const mutRes = await stub.fetch(new Request(DO_ORIGIN + '/mutate', {
@@ -352,7 +365,19 @@ async function runNewsPipeline(env) {
         body: JSON.stringify({ type: 'add_island', payload: { island }, actorToken: 'news-pipeline' })
       }));
       const mut = await mutRes.json();
-      if (mut.ok) { out.created++; } else { out.errors.push('create island failed: ' + mut.error); }
+      if (mut.ok) {
+        out.created++;
+        // 新聞去重記錄：成功建島後寫入（同一 url 之後會由 /news/check 攔住）
+        const recRes = await stub.fetch(new Request(DO_ORIGIN + '/news/record', {
+          method: 'POST',
+          body: JSON.stringify({
+            feed: feedUrl, url: it.link, titleZh: title, titleEn: title,
+            summary: it.desc, publishedAt: Date.parse(it.date) || now.getTime(),
+            theme, score: 1, islandId, rawJson: JSON.stringify(it)
+          })
+        }));
+        if (!recRes.ok) out.errors.push('news record failed: ' + it.link);
+      } else { out.errors.push('create island failed: ' + mut.error); }
     }
   }
   return out;
@@ -384,7 +409,7 @@ export async function handleRequest(request, env = {}) {
     }
     // Phase 3：匿名 session + mutations
     if (path === '/api/session' && method === 'POST') {
-      const r = await createSession(env);
+      const r = await createSession(env, request.headers.get('cf-connecting-ip') || 'unknown');
       if (!r.ok) return fail(r.error, r.status);
       return json({ token: r.token });
     }

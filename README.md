@@ -13,7 +13,7 @@
 | 平台 | 網址 | 備註 |
 |---|---|---|
 | **GitHub Pages** | https://hkteddychan.github.io/policy-islands/ | 永久、免費、已驗證 |
-| **Cloudflare Worker** | https://policy-islands.typhoon-friction.workers.dev/ | **臨時帳戶**（`--temporary`），隨時可能被回收；正式部署需 CF API token |
+| **Cloudflare Worker** | https://policy-islands.teddy-spot.workers.dev/ | **臨時帳戶**（`--temporary`），隨時可能被回收；正式部署需 CF API token |
 
 兩邊都係同一個 `index.html`（單檔 133KB，無 build step 就可以跑）。
 

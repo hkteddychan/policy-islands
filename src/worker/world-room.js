@@ -166,6 +166,11 @@ async function sha256Hex(text) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// 同 worker/index.js 嘅 newsId() 完全一致：sha256(url) 前 16 hex。
+async function newsId(url) {
+  return (await sha256Hex(url)).slice(0, 16);
+}
+
 // Phase 5：每日任務定義（每日 0 點重置；進度存 task_state）
 const TASKS = [
   { id: 'build', label: { zh: '加一座建築', en: 'Add a building' }, target: 1 },
@@ -261,6 +266,22 @@ export class WorldRoom {
         const n = this.sql.exec('SELECT id FROM news_items WHERE id = ?', id).toArray()[0];
         return Response.json({ exists: !!n });
       }
+      if (path === '/news/record' && request.method === 'POST') {
+        const body = await request.json().catch(() => null);
+        if (!body || !body.url) return Response.json({ error: 'url required' }, { status: 400 });
+        await this.ensureInit();
+        const id = await newsId(body.url);
+        const publishedAt = Number(body.publishedAt);
+        const score = Number(body.score);
+        this.sql.exec(
+          `INSERT OR REPLACE INTO news_items (id, feed, url, title_zh, title_en, summary, published_at, fetched_at, theme, score, island_id, raw_json)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          id, body.feed || '', body.url, body.titleZh || '', body.titleEn || body.titleZh || '',
+          body.summary || '', Number.isFinite(publishedAt) ? publishedAt : null,
+          Number(body.fetchedAt) || Date.now(), body.theme || null,
+          Number.isFinite(score) ? score : null, body.islandId || null, body.rawJson || null);
+        return Response.json({ ok: true, id });
+      }
       if (path === '/news/gate' && request.method === 'GET') {
         const day = url.searchParams.get('day') || '';
         const theme = url.searchParams.get('theme') || '';
@@ -276,7 +297,10 @@ export class WorldRoom {
           "SELECT COUNT(*) AS n FROM islands WHERE origin = 'news' AND theme = ? AND created_at >= ?",
           theme, Number(new Date().setHours(0, 0, 0, 0))).toArray()[0];
         const ok = todayCount < 3 && totalCount < 40 && Number(sameTheme?.n || 0) < 1;
-        return Response.json({ ok, count: todayCount, total: totalCount });
+        // 全站新聞島總數（唔按日重置）→ index.js 用嚟派無重複嘅島號 97,98,99,100...
+        const newsTotal = this.sql.exec(
+          "SELECT COUNT(*) AS n FROM islands WHERE id LIKE 'news-%'").toArray()[0];
+        return Response.json({ ok, count: todayCount, total: totalCount, newsTotal: Number(newsTotal?.n || 0) });
       }
       // Phase 5：市民提案 / 每日任務 / 島支持度
       if (path === '/proposals') {
@@ -291,8 +315,10 @@ export class WorldRoom {
         return Response.json({ ok: true, proposals: out, threshold: PROPOSAL_THRESHOLD });
       }
       if (path === '/tasks') {
+        // 只接受 Authorization: Bearer，避免 token 經 query string 落入 access log。
         const auth = request.headers.get('Authorization') || '';
-        const raw = (auth.startsWith('Bearer ') ? auth.slice(7) : '') || url.searchParams.get('token') || '';
+        const raw = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+        if (!raw) return Response.json({ error: 'session token required' }, { status: 401 });
         const hash = await sha256Hex(raw);
         const day = new Date().toISOString().slice(0, 10);
         const rows = this.sql.exec(
@@ -374,6 +400,10 @@ export class WorldRoom {
     const err = this.validateMutation(type, payload);
     if (err) return { ok: false, status: 400, error: err };
 
+    // add_item 嘅 no 喺寫 audit log 之前由 server 定好，確保 replay / broadcast
+    // 都帶正確 no（唔會再出現 client 傳入嘅 99）。
+    if (type === 'add_item' && payload.item) payload.item.no = this.assignItemNo(payload.item);
+
     const seq = await this.nextSeq();
     this.sql.exec(
       'INSERT INTO mutations (seq, type, payload_json, actor_token, created_at) VALUES (?,?,?,?,?)',
@@ -383,7 +413,7 @@ export class WorldRoom {
     if (!result.ok) return { ok: false, status: 400, error: result.error };
 
     // 廣播俾所有連線（Phase 2）
-    this.broadcast({ type: 'mutation', seq, mutation: { seq, type, payload, actorToken: actorToken || null } });
+    this.broadcast({ type: 'mutation', seq, mutation: { seq, type, payload, actorToken: null } });
     return { ok: true, seq };
   }
 
@@ -473,13 +503,23 @@ export class WorldRoom {
     return 'unknown mutation type: ' + type;
   }
 
+  // no 一律由 server 計（忽略 client 傳入），避免 no=99 令前端 ①..⑥ 陣列越界。
+  assignItemNo(it) {
+    const existing = this.sql.exec('SELECT no FROM items WHERE id = ?', it.id).toArray()[0];
+    if (existing) return existing.no;
+    const count = this.sql.exec(
+      'SELECT COUNT(*) AS c FROM items WHERE island_id = ? AND deleted_at IS NULL', it.islandId).toArray()[0]?.c || 0;
+    return Number(count) + 1;
+  }
+
   applyMutation(type, payload, now, actorToken) {
     if (type === 'add_item') {
       const it = payload.item;
+      it.no = this.assignItemNo(it);
       this.sql.exec(
         `INSERT OR REPLACE INTO items (id, island_id, no, model, name_zh, name_en, facts_json, timeline_json, src, freq, created_at, created_by, deleted_at)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
-        it.id, it.islandId, it.no ?? 99, it.model, it.name.zh, it.name.en || it.name.zh,
+        it.id, it.islandId, it.no, it.model, it.name.zh, it.name.en || it.name.zh,
         JSON.stringify(it.facts || DEFAULT_FACTS), JSON.stringify(it.timeline || DEFAULT_TIMELINE),
         it.src || '市民提案', it.freq || '即時', now, payload.actorToken || null);
       // 貢獻分：+10（actorToken 係 full hash）
@@ -699,7 +739,8 @@ export class WorldRoom {
     const rows = this.sql.exec('SELECT * FROM mutations WHERE seq > ? ORDER BY seq ASC LIMIT 500', since).toArray();
     const meta = this.sql.exec("SELECT v FROM world_meta WHERE k = 'seq'").toArray()[0];
     const seq = Number(meta?.v ?? 0);
-    return { mutations: rows, seq: Number.isFinite(seq) ? seq : 0 };
+    // 對外唔回傳可串連行為嘅 actor_token hash。
+    return { mutations: rows.map(r => ({ ...r, actor_token: null })), seq: Number.isFinite(seq) ? seq : 0 };
   }
 }
 
