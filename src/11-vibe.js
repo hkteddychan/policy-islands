@@ -153,7 +153,7 @@
     // 新聞島（如有）
     const newsList = ISLANDS.filter(x => String(x.id).startsWith('news-'));
     if (newsList.length) {
-      steps.push({ island: newsList[0].id, text: `呢個係新聞島「${newsList[0].name.zh}」——由最新政府新聞自動生成，支持或認領佢可以 +分！` });
+      steps.push({ island: newsList[0].id, text: `呢個係新聞島「${newsList[0].name.zh}」——全港最新政策新聞集中地，最多顯示 5 條熱度最高嘅新聞，支持或認領佢可以 +分！` });
     }
     steps.push({ home: true, text: '呢個城市係活嘅：協作線代表政策之間嘅依賴，小人即刻執行緊。打開「協作線」開關就見到晒。祝你喺政策島玩得開心！' });
     return steps;

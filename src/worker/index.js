@@ -316,8 +316,14 @@ async function runNewsPipeline(env) {
   if (!hasDO(env)) return { ok: false, error: 'no backend' };
   const stub = await doStub(env);
   const now = new Date();
-  const dayKey = now.toISOString().slice(0, 10).replace(/-/g, '');
   const out = { fetched: 0, new: 0, created: 0, skipped: 0, errors: [] };
+
+  // Redesign：先清理舊式多新聞島（淨返 news-hub 一座），再推新聞入 hub
+  try {
+    const cleanRes = await stub.fetch(new Request(DO_ORIGIN + '/news/cleanup', { method: 'POST' }));
+    const clean = await cleanRes.json();
+    out.cleaned = clean.cleaned || 0;
+  } catch (e) { out.errors.push('cleanup: ' + (e && e.message)); }
 
   for (const feedUrl of NEWS_FEEDS) {
     let xml;
@@ -333,51 +339,38 @@ async function runNewsPipeline(env) {
       const text = it.title + ' ' + it.desc;
       const theme = classifyNews(text);
       if (!theme) { out.skipped++; continue; }
-      // 去重：問 DO 呢條新聞見未
+      // 去重：同一 URL 已入過 news_items → skip（熱度靠 push 時累加）
       const dupRes = await stub.fetch(new Request(DO_ORIGIN + '/news/check?id=' + id));
       const dup = await dupRes.json();
       if (dup.exists) { out.skipped++; continue; }
       out.new++;
-      // gating：今日新聞島數量 + 總島數量（由 DO 提供）
-      const gateRes = await stub.fetch(new Request(DO_ORIGIN + '/news/gate?day=' + dayKey + '&theme=' + theme));
-      const gate = await gateRes.json();
-      if (!gate.ok) { out.skipped++; continue; }
-      // 建島：news-YYYYMMDD-NN
-      const nn = String(gate.count + 1).padStart(2, '0');
-      const islandId = 'news-' + dayKey + '-' + nn;
-      // 島名截短（CSS2D pill 可讀性）：優先喺標點/空格截，最多 24 字
+      // 標題截短（item pill 可讀性）
       let title = it.title.trim();
       if (title.length > 24) {
         const cut = title.slice(0, 24);
         const m = cut.match(/^(.+?)[（(：:、，。,. ]/);
         title = (m ? m[1] : cut) + '…';
       }
-      const island = {
-        id: islandId, no: String(97 + Number(gate.newsTotal || 0)), theme,
-        name: { zh: title, en: title },
-        summary: { zh: it.desc.slice(0, 120), en: it.desc.slice(0, 120) },
-        icon: '📰', color: 0x9cc27a, ang: null, radius: 32,
-        newsId: id,
-        itemModel: theme === 'transport' ? 'kcr' : theme === 'health' ? 'clinic' : theme === 'education' ? 'temple' : theme === 'housing' ? 'estate' : theme === 'environment' ? 'lighthouse' : 'jockey'
-      };
-      const mutRes = await stub.fetch(new Request(DO_ORIGIN + '/mutate', {
+      // model 按主題揀（視覺多樣性）
+      const model = theme === 'transport' ? 'kcr' : theme === 'health' ? 'clinic' : theme === 'education' ? 'temple' : theme === 'housing' ? 'estate' : theme === 'environment' ? 'lighthouse' : 'jockey';
+      // 推新聞入 news-hub（server 會：寫 news_items + 加 item + 裁 top 5）
+      const pushRes = await stub.fetch(new Request(DO_ORIGIN + '/news/push', {
         method: 'POST',
-        body: JSON.stringify({ type: 'add_island', payload: { island }, actorToken: 'news-pipeline' })
+        body: JSON.stringify({
+          item: {
+            id, theme, model,
+            titleZh: title, titleEn: title,
+            summary: it.desc.slice(0, 120),
+            url: it.link, feed: feedUrl,
+            publishedAt: Date.parse(it.date) || now.getTime(),
+            rawJson: JSON.stringify(it),
+            score: 1
+          }
+        })
       }));
-      const mut = await mutRes.json();
-      if (mut.ok) {
-        out.created++;
-        // 新聞去重記錄：成功建島後寫入（同一 url 之後會由 /news/check 攔住）
-        const recRes = await stub.fetch(new Request(DO_ORIGIN + '/news/record', {
-          method: 'POST',
-          body: JSON.stringify({
-            feed: feedUrl, url: it.link, titleZh: title, titleEn: title,
-            summary: it.desc, publishedAt: Date.parse(it.date) || now.getTime(),
-            theme, score: 1, islandId, rawJson: JSON.stringify(it)
-          })
-        }));
-        if (!recRes.ok) out.errors.push('news record failed: ' + it.link);
-      } else { out.errors.push('create island failed: ' + mut.error); }
+      const push = await pushRes.json();
+      if (push.ok) out.created++;
+      else out.errors.push('push news failed: ' + (push.error || it.link));
     }
   }
   return out;

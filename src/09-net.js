@@ -44,6 +44,16 @@
 
   function applyServerWorld(w) {
     if (!w || !w.items) return;
+    // 移除已被 server 裁走嘅新聞 item（news-hub 最多 5 條；唔喺最新 world 入面 → 舊 mesh 要清）
+    if (window.__removeItemMesh) {
+      const liveNews = new Set((w.items || []).filter(i => i.islandId === 'news-hub').map(i => i.id));
+      for (const k in ITEMS) {
+        if (ITEMS[k] && ITEMS[k].islandId === 'news-hub' && !liveNews.has(k)) {
+          try { window.__removeItemMesh(k); } catch (e) {}
+          delete ITEMS[k];
+        }
+      }
+    }
     for (const it of w.items) {
       if (!ITEMS[it.id] && it.islandId && window.__addItemMesh) {
         ITEMS[it.id] = it;

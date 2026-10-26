@@ -777,6 +777,27 @@ window.__addItemMesh = function (item) {
   if (typeof STATE !== 'undefined') STATE.dirty = true;   // 唔 set dirty 唔會 render
   return true;
 };
+// 移除某個 item 嘅 mesh（news-hub 裁走低熱度新聞時用）
+// item mesh 係 standalone group（b.group），逐 mesh 有 userData.pick='item' & id
+// → 搵到就移除佢所屬 group；冇 group 就直接移除 mesh
+window.__removeItemMesh = function (id) {
+  let removed = 0;
+  scene.traverse((obj) => {
+    if (obj.isMesh && obj.userData && obj.userData.pick === 'item' && obj.userData.id === id) {
+      // 向上行搵到 standalone group root（b.group 直接掛喺 scene）
+      let g = obj;
+      while (g.parent && g.parent !== scene) g = g.parent;
+      const target = (g.parent === scene) ? g : obj;
+      if (target.parent) {
+        target.parent.remove(target);
+        removed++;
+      }
+    }
+  });
+  delete ITEM_WORLD[id];
+  if (typeof STATE !== 'undefined') STATE.dirty = true;
+  return removed > 0;
+};
 /* ---------- 新島自動連路 + 建築群（Phase 6） ----------
    新島唔再係「空地」：
    1. autoLinkNewIsland —— 搵最近嘅現有島，建一條視覺橋（standalone）+ 加 FLOWS 記錄

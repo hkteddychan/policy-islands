@@ -174,7 +174,7 @@ async function newsId(url) {
 // Phase 5：每日任務定義（每日 0 點重置；進度存 task_state）
 const TASKS = [
   { id: 'build', label: { zh: '加一座建築', en: 'Add a building' }, target: 1 },
-  { id: 'news', label: { zh: '探訪 3 個新聞島', en: 'Visit 3 news islands' }, target: 3 },
+  { id: 'news', label: { zh: '探訪新聞島', en: 'Visit the news hub' }, target: 1 },
   { id: 'flow', label: { zh: '查看一條協作線', en: 'View a collaboration flow' }, target: 1 },
   { id: 'vote', label: { zh: '投票支持一個提案', en: 'Vote for a proposal' }, target: 1 },
 ];
@@ -281,6 +281,18 @@ export class WorldRoom {
           Number(body.fetchedAt) || Date.now(), body.theme || null,
           Number.isFinite(score) ? score : null, body.islandId || null, body.rawJson || null);
         return Response.json({ ok: true, id });
+      }
+      if (path === '/news/push' && request.method === 'POST') {
+        const body = await request.json().catch(() => null);
+        if (!body || !body.item || !body.item.id) return Response.json({ error: 'item required' }, { status: 400 });
+        await this.ensureInit();
+        const r = this.pushNewsItem(body.item, Date.now());
+        return Response.json(r);
+      }
+      if (path === '/news/cleanup' && request.method === 'POST') {
+        await this.ensureInit();
+        const n = this.cleanupLegacyNewsIslands(Date.now());
+        return Response.json({ ok: true, cleaned: n });
       }
       if (path === '/news/gate' && request.method === 'GET') {
         const day = url.searchParams.get('day') || '';
@@ -501,6 +513,88 @@ export class WorldRoom {
       return null;
     }
     return 'unknown mutation type: ' + type;
+  }
+
+  // ── 單一新聞島（news-hub）管理 ──────────────────────────────
+  // 確保新聞樞紐島存在（冇就自動建一座，theme=news）
+  ensureNewsHub(now) {
+    const hub = this.sql.exec('SELECT id FROM islands WHERE id = ?', 'news-hub').toArray()[0];
+    if (!hub) {
+      this.sql.exec(
+        `INSERT OR REPLACE INTO islands (id, no, theme, name_zh, name_en, summary_zh, summary_en, icon, color, ang, radius, origin, news_id, created_at, created_by, deleted_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
+        'news-hub', '96', 'news', '新聞島', 'News Hub',
+        '全港最新政策新聞，最多顯示 5 條熱度最高', 'Latest HK policy news — top 5 by heat',
+        '📰', 0x9cc27a, null, 34, 'news', null, now, 'news-pipeline');
+    }
+    return this.sql.exec('SELECT id FROM islands WHERE id = ?', 'news-hub').toArray()[0];
+  }
+
+  // 將新聞 item 加入 news-hub 島；熱度 score 累加；裁走超過 5 條嘅低熱度新聞
+  pushNewsItem(it, now) {
+    this.ensureNewsHub(now);
+    const id = it.id;
+    // 熱度累加：同一條新聞再出現 → score +1（重複出現代表更熱）
+    const old = this.sql.exec('SELECT score FROM news_items WHERE id = ?', id).toArray()[0];
+    const score = old ? Number(old.score || 0) + 1 : Number(it.score || 1);
+    this.sql.exec(
+      `INSERT OR REPLACE INTO news_items (id, feed, url, title_zh, title_en, summary, published_at, fetched_at, theme, score, island_id, raw_json)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      id, it.feed || '', it.url || '', it.titleZh || '', it.titleEn || it.titleZh || '',
+      it.summary || '', Number(it.publishedAt) || null, now, it.theme || null,
+      score, 'news-hub', it.rawJson || null);
+    // 新聞 = item（掛喺 news-hub；no 由 server 計）
+    const itemId = 'news-' + id;
+    const no = this.assignItemNo({ id: itemId, islandId: 'news-hub' });
+    const ex = this.sql.exec('SELECT id FROM items WHERE id = ? AND deleted_at IS NULL', itemId).toArray()[0];
+    if (!ex) {
+      this.sql.exec(
+        `INSERT INTO items (id, island_id, no, model, name_zh, name_en, facts_json, timeline_json, src, freq, created_at, created_by, deleted_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)`,
+        itemId, 'news-hub', no, it.model || 'pavilion', it.titleZh || '', it.titleEn || it.titleZh || '',
+        JSON.stringify([{ v: '🔥 ' + score, u: { zh: '', en: '' }, k: { zh: '熱度', en: 'heat' } }]),
+        JSON.stringify([{ d: 'now', t: { zh: (it.summary || '').slice(0, 80), en: (it.summary || '').slice(0, 80) } }]),
+        '新聞自動生成', '即時', now, 'news-pipeline');
+    } else {
+      // 已存在 → 更新熱度顯示
+      this.sql.exec(
+        `UPDATE items SET facts_json = ? WHERE id = ?`,
+        JSON.stringify([{ v: '🔥 ' + score, u: { zh: '', en: '' }, k: { zh: '熱度', en: 'heat' } }]),
+        itemId);
+    }
+    // 裁走超過 5 條：soft-delete 低熱度嗰啲（保留 top 5 by score, fetched_at）
+    this.trimNewsItems(now);
+    return { ok: true, score };
+  }
+
+  // 新聞島最多 keep 5 條：soft-delete 超出嘅（score 低 + 舊）
+  // ⚠️ 排序用 news_items.score（唔係 facts_json 字串）——item id = 'news-' + newsId
+  trimNewsItems(now) {
+    const top = this.sql.exec(
+      `SELECT n.id FROM news_items n
+       WHERE n.island_id = 'news-hub'
+       ORDER BY n.score DESC, n.fetched_at DESC
+       LIMIT 5`).toArray();
+    const keep = new Set(top.map(r => 'news-' + r.id));
+    const all = this.sql.exec(
+      `SELECT id FROM items WHERE island_id = 'news-hub' AND deleted_at IS NULL`).toArray();
+    for (const r of all) {
+      if (!keep.has(r.id)) {
+        this.sql.exec('UPDATE items SET deleted_at = ? WHERE id = ?', now, r.id);
+      }
+    }
+  }
+
+  // 清理舊式新聞島（id != news-hub 嘅 origin=news 島 → soft delete），Redesign 後淨返一座
+  cleanupLegacyNewsIslands(now) {
+    const rows = this.sql.exec(
+      `SELECT id FROM islands WHERE origin = 'news' AND id != 'news-hub' AND deleted_at IS NULL`).toArray();
+    for (const r of rows) {
+      this.sql.exec('UPDATE islands SET deleted_at = ? WHERE id = ?', now, r.id);
+      // 連帶 items soft delete
+      this.sql.exec('UPDATE items SET deleted_at = ? WHERE island_id = ? AND deleted_at IS NULL', now, r.id);
+    }
+    return rows.length;
   }
 
   // no 一律由 server 計（忽略 client 傳入），避免 no=99 令前端 ①..⑥ 陣列越界。

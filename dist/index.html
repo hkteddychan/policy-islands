@@ -1845,6 +1845,27 @@ window.__addItemMesh = function (item) {
   if (typeof STATE !== 'undefined') STATE.dirty = true;   // 唔 set dirty 唔會 render
   return true;
 };
+// 移除某個 item 嘅 mesh（news-hub 裁走低熱度新聞時用）
+// item mesh 係 standalone group（b.group），逐 mesh 有 userData.pick='item' & id
+// → 搵到就移除佢所屬 group；冇 group 就直接移除 mesh
+window.__removeItemMesh = function (id) {
+  let removed = 0;
+  scene.traverse((obj) => {
+    if (obj.isMesh && obj.userData && obj.userData.pick === 'item' && obj.userData.id === id) {
+      // 向上行搵到 standalone group root（b.group 直接掛喺 scene）
+      let g = obj;
+      while (g.parent && g.parent !== scene) g = g.parent;
+      const target = (g.parent === scene) ? g : obj;
+      if (target.parent) {
+        target.parent.remove(target);
+        removed++;
+      }
+    }
+  });
+  delete ITEM_WORLD[id];
+  if (typeof STATE !== 'undefined') STATE.dirty = true;
+  return removed > 0;
+};
 /* ---------- 新島自動連路 + 建築群（Phase 6） ----------
    新島唔再係「空地」：
    1. autoLinkNewIsland —— 搵最近嘅現有島，建一條視覺橋（standalone）+ 加 FLOWS 記錄
@@ -3258,6 +3279,16 @@ window.addEventListener('error', (e) => { window.__errs.push(String(e.message));
 
   function applyServerWorld(w) {
     if (!w || !w.items) return;
+    // 移除已被 server 裁走嘅新聞 item（news-hub 最多 5 條；唔喺最新 world 入面 → 舊 mesh 要清）
+    if (window.__removeItemMesh) {
+      const liveNews = new Set((w.items || []).filter(i => i.islandId === 'news-hub').map(i => i.id));
+      for (const k in ITEMS) {
+        if (ITEMS[k] && ITEMS[k].islandId === 'news-hub' && !liveNews.has(k)) {
+          try { window.__removeItemMesh(k); } catch (e) {}
+          delete ITEMS[k];
+        }
+      }
+    }
     for (const it of w.items) {
       if (!ITEMS[it.id] && it.islandId && window.__addItemMesh) {
         ITEMS[it.id] = it;
@@ -4228,7 +4259,7 @@ window.addEventListener('error', (e) => { window.__errs.push(String(e.message));
     // 新聞島（如有）
     const newsList = ISLANDS.filter(x => String(x.id).startsWith('news-'));
     if (newsList.length) {
-      steps.push({ island: newsList[0].id, text: `呢個係新聞島「${newsList[0].name.zh}」——由最新政府新聞自動生成，支持或認領佢可以 +分！` });
+      steps.push({ island: newsList[0].id, text: `呢個係新聞島「${newsList[0].name.zh}」——全港最新政策新聞集中地，最多顯示 5 條熱度最高嘅新聞，支持或認領佢可以 +分！` });
     }
     steps.push({ home: true, text: '呢個城市係活嘅：協作線代表政策之間嘅依賴，小人即刻執行緊。打開「協作線」開關就見到晒。祝你喺政策島玩得開心！' });
     return steps;
